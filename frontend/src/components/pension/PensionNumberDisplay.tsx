@@ -1,7 +1,7 @@
 export function PensionDigitBall({ value, color }: { value: string; color: string }) {
     return (
         <div
-            className="flex h-[clamp(50px,8.6vw,78px)] w-[clamp(50px,8.6vw,78px)] items-center justify-center rounded-full border-[4px] bg-white text-[clamp(24px,4vw,40px)] font-semibold text-slate-950"
+            className="flex h-[clamp(50px,8.6vw,78px)] w-[clamp(50px,8.6vw,78px)] items-center justify-center rounded-full border-[3px] bg-white text-[clamp(24px,4vw,40px)] font-bold text-slate-800 shadow-sm"
             style={{ borderColor: color }}
         >
             {value}
@@ -9,7 +9,7 @@ export function PensionDigitBall({ value, color }: { value: string; color: strin
     );
 }
 
-const DIGIT_COLORS = ['#d1d5db', '#ea580c', '#fb8c00', '#fbbc04', '#2d9cdb', '#a06cd5', '#b0b7c3'];
+const DIGIT_COLORS = ['#cbd5e1', '#f97316', '#f59e0b', '#eab308', '#3b82f6', '#8b5cf6', '#94a3b8'];
 
 export function PensionNumberRow({
     label,

@@ -98,11 +98,11 @@ export function PensionPage({
                     </p>
 
                     {pensionRuleWeights.length > 0 && (
-                        <div className="mb-4 rounded-[24px] border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5">
+                        <div className="mb-4 rounded-[24px] border border-slate-100 bg-slate-50 p-4 sm:p-5">
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">추천 성향 분석</p>
-                                    <h3 className="mt-1 text-lg font-semibold text-slate-950">최근 24회 기준 추천 성향 우선순위</h3>
+                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">추천 성향 분석</p>
+                                    <h3 className="mt-1 text-lg font-bold text-slate-800">최근 24회 기준 추천 성향 우선순위</h3>
                                 </div>
                                 <p className="text-xs text-slate-500 sm:text-sm">점수가 높은 추천 성향을 먼저 적용합니다.</p>
                             </div>
@@ -210,11 +210,11 @@ export function PensionPage({
                                 </div>
                             </div>
 
-                            <div className="mt-5 rounded-[24px] border border-sky-100 bg-sky-50/50 p-4 sm:p-5">
+                            <div className="mt-5 rounded-[24px] border border-slate-100 bg-slate-50 p-4 sm:p-5">
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                     <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700">백테스트 성향 가중치</p>
-                                        <h3 className="mt-1 text-lg font-semibold text-slate-950">현재 추천 성향 우선순위</h3>
+                                        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">백테스트 성향 가중치</p>
+                                        <h3 className="mt-1 text-lg font-bold text-slate-800">현재 추천 성향 우선순위</h3>
                                     </div>
                                     <p className="text-xs text-slate-500 sm:text-sm">최근 데이터로 계산한 현재 우선순위입니다.</p>
                                 </div>
@@ -229,11 +229,11 @@ export function PensionPage({
                                 </div>
                             </div>
 
-                            <div className="mt-5 rounded-[24px] border border-slate-200/80 bg-white/70 p-4 sm:p-5">
+                            <div className="mt-5 rounded-[24px] border border-slate-100 bg-slate-50 p-4 sm:p-5">
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                     <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">성향 성과 분석</p>
-                                        <h3 className="mt-1 text-lg font-semibold text-slate-950">추천 성향별 백테스트 성과</h3>
+                                        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">성향 성과 분석</p>
+                                        <h3 className="mt-1 text-lg font-bold text-slate-800">추천 성향별 백테스트 성과</h3>
                                     </div>
                                     <p className="text-xs text-slate-500 sm:text-sm">추천 성향별 정확 일치 성과를 비교합니다.</p>
                                 </div>

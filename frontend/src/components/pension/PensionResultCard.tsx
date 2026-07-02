@@ -5,14 +5,14 @@ import { PensionNumberRow } from './PensionNumberDisplay';
 
 export function PensionResultCard({ draw }: { draw: PensionDrawResult }) {
     return (
-        <div className="latest-feature-card rounded-[30px] px-5 py-7 sm:px-8 sm:py-9 lg:px-12 lg:py-12">
+        <div className="rounded-[30px] border border-slate-200/60 bg-white px-5 py-7 shadow-sm sm:px-8 sm:py-9 lg:px-12 lg:py-12">
             <div className="latest-feature-heading">
                 <div className="result-arrow-shell result-arrow-left">
                     <ChevronLeft className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={1.5} />
                 </div>
                 <div className="text-center">
-                    <h2 className="text-[30px] font-semibold tracking-[-0.05em] text-slate-950 sm:text-[48px] lg:text-[56px]">
-                    제 <span className="text-emerald-600">{draw.draw_no}</span>회 추첨 결과
+                    <h2 className="text-[30px] font-bold text-slate-800 sm:text-[48px] lg:text-[56px]">
+                    제 <span className="text-slate-900">{draw.draw_no}</span>회 추첨 결과
                     </h2>
                     <p className="mt-3 text-base font-medium text-slate-500 sm:text-[18px]">{draw.draw_date} 추첨</p>
                 </div>

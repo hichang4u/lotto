@@ -30,10 +30,10 @@ export function DrawResultCard({
 
     if (variant === 'latest') {
         return (
-            <div className="latest-feature-card rounded-[30px] px-5 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
+            <div className="rounded-[30px] border border-slate-200/60 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8 lg:px-12 lg:py-10">
                 {statusText && (
-                    <div className="latest-feature-status mb-5 rounded-2xl px-4 py-3 text-center sm:mb-7">
-                        <p className="text-xs font-medium tracking-[-0.01em] text-slate-600 sm:text-sm">{statusText}</p>
+                    <div className="mb-5 rounded-2xl bg-slate-50 px-4 py-3 text-center sm:mb-7">
+                        <p className="text-xs font-medium text-slate-500 sm:text-sm">{statusText}</p>
                     </div>
                 )}
 
@@ -82,7 +82,7 @@ export function DrawResultCard({
                     <button
                         type="button"
                         onClick={onSecondaryAction}
-                        className="latest-feature-secondary inline-flex min-h-14 items-center justify-center rounded-[24px] px-3 text-[15px] font-semibold tracking-[-0.02em] text-slate-800 transition sm:px-5 sm:text-lg"
+                        className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-5 sm:text-lg"
                     >
                         {secondaryActionLabel ?? '회차 상세 보기'}
                     </button>
@@ -90,7 +90,7 @@ export function DrawResultCard({
                         type="button"
                         onClick={onPrimaryAction}
                         disabled={primaryDisabled}
-                        className="latest-feature-primary inline-flex min-h-14 items-center justify-center rounded-[24px] px-3 text-[15px] font-semibold tracking-[-0.02em] text-white transition disabled:opacity-60 sm:px-5 sm:text-lg"
+                        className="inline-flex min-h-[56px] items-center justify-center rounded-2xl bg-slate-900 px-3 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 sm:px-5 sm:text-lg"
                     >
                         {primaryActionLabel ?? '최신 결과 동기화'}
                     </button>
@@ -108,7 +108,7 @@ export function DrawResultCard({
     }
 
     return (
-        <div className="latest-draw-card rounded-[24px] px-5 py-6 sm:rounded-[28px] sm:px-8 sm:py-9 lg:px-12 lg:py-10">
+        <div className="rounded-[24px] border border-slate-200/60 bg-white px-5 py-6 shadow-sm sm:rounded-[28px] sm:px-8 sm:py-9 lg:px-12 lg:py-10">
             <div className="relative text-center">
                 <div className="pointer-events-none absolute left-0 top-1/2 hidden -translate-y-1/2 lg:flex">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
@@ -127,7 +127,7 @@ export function DrawResultCard({
                     제 <span className="text-emerald-600">{draw.drwNo}</span>회 추첨 결과
                 </h3>
                 <p className="mt-3 text-base font-medium text-slate-500 sm:text-[18px]">{draw.drwNoDate} 추첨</p>
-                <div className="mt-5 inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                <div className="mt-5 inline-flex rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
                     1등 당첨금 {formatMoneyKRW(draw.firstWinamnt)}
                 </div>
             </div>
@@ -167,17 +167,17 @@ export function DrawResultCard({
             </div>
 
             <div className="mt-8 grid gap-2 sm:grid-cols-3">
-                <div className="latest-draw-stat rounded-2xl px-3 py-3">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
                     <div className="text-[11px] font-medium text-slate-500">보너스 번호</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-900">{draw.bnusNo}</div>
+                    <div className="mt-1 text-lg font-semibold text-slate-800">{draw.bnusNo}</div>
                 </div>
-                <div className="latest-draw-stat rounded-2xl px-3 py-3">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
                     <div className="text-[11px] font-medium text-slate-500">번호 합계</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-900">{sum}</div>
+                    <div className="mt-1 text-lg font-semibold text-slate-800">{sum}</div>
                 </div>
-                <div className="latest-draw-stat rounded-2xl px-3 py-3">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
                     <div className="text-[11px] font-medium text-slate-500">홀수 개수</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-900">{oddCount}</div>
+                    <div className="mt-1 text-lg font-semibold text-slate-800">{oddCount}</div>
                 </div>
             </div>
         </div>

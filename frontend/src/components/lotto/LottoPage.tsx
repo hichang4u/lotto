@@ -85,7 +85,7 @@ export function LottoPage({
                     accent="soft"
                 >
                     <div className="mb-3 flex items-center justify-end">
-                        <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">5개 조합</div>
+                        <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">5개 조합</div>
                     </div>
 
                     <p className="mb-3 text-sm text-slate-500">
@@ -93,11 +93,11 @@ export function LottoPage({
                     </p>
 
                     {ruleWeights.length > 0 && (
-                        <div className="mb-4 rounded-[24px] border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5">
+                        <div className="mb-4 rounded-[24px] border border-slate-100 bg-slate-50 p-4 sm:p-5">
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">규칙 가중치 분석</p>
-                                    <h3 className="mt-1 text-lg font-semibold text-slate-950">최근 24회 기준 추천 규칙 우선순위</h3>
+                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">규칙 가중치 분석</p>
+                                    <h3 className="mt-1 text-lg font-bold text-slate-800">최근 24회 기준 추천 규칙 우선순위</h3>
                                 </div>
                                 <p className="text-xs text-slate-500 sm:text-sm">점수가 높은 규칙을 먼저 적용해 추천 세트를 만듭니다.</p>
                             </div>
@@ -161,11 +161,11 @@ export function LottoPage({
                                 </div>
                             </div>
 
-                            <div className="mt-5 rounded-[24px] border border-sky-100 bg-sky-50/50 p-4 sm:p-5">
+                            <div className="mt-5 rounded-[24px] border border-slate-100 bg-slate-50 p-4 sm:p-5">
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                     <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700">백테스트 가중치</p>
-                                        <h3 className="mt-1 text-lg font-semibold text-slate-950">현재 규칙 가중치</h3>
+                                        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">백테스트 가중치</p>
+                                        <h3 className="mt-1 text-lg font-bold text-slate-800">현재 규칙 가중치</h3>
                                     </div>
                                     <p className="text-xs text-slate-500 sm:text-sm">최근 데이터로 계산한 현재 우선순위입니다.</p>
                                 </div>
@@ -179,8 +179,8 @@ export function LottoPage({
                             <div className="mt-5 rounded-[24px] border border-slate-200/80 bg-white/70 p-4 sm:p-5">
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                     <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">규칙 성과 분석</p>
-                                        <h3 className="mt-1 text-lg font-semibold text-slate-950">규칙별 백테스트 성과</h3>
+                                        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">규칙 성과 분석</p>
+                                        <h3 className="mt-1 text-lg font-bold text-slate-800">규칙별 백테스트 성과</h3>
                                     </div>
                                     <p className="text-xs text-slate-500 sm:text-sm">규칙별 생성 결과와 폴백 비율입니다.</p>
                                 </div>
@@ -312,7 +312,7 @@ export function LottoPage({
             </section>
 
             <section className="mt-4 lg:mt-5">
-                <div className="panel flex flex-col gap-2 rounded-[24px] px-4 py-3 text-[13px] text-slate-600 sm:flex-row sm:items-start sm:px-5 sm:text-sm">
+                <div className="flex flex-col gap-2 rounded-[24px] border border-slate-200/60 bg-white px-4 py-4 text-[13px] text-slate-600 shadow-sm sm:flex-row sm:items-start sm:px-5 sm:text-sm">
                     <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 sm:h-5 sm:w-5" />
                     <p className="leading-5 sm:leading-6">
                         본 서비스는 과거 당첨 데이터를 바탕으로 정보를 정리하고 추천 번호를 제공하는 참고용 도구입니다. 당첨을 보장하지 않으며,
