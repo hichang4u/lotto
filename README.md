@@ -46,24 +46,16 @@
 npm install
 ```
 
-### 2. 백엔드 실행
+### 2. 통합 로컬 가상환경 실행 (프론트엔드 + 백엔드 동시 구동)
 
 ```bash
-cd backend
 npm run dev
 ```
 
-- 기본 포트: `8787`
-
-### 3. 프론트엔드 실행
-
-```bash
-cd frontend
-npm run dev
-```
-
-- 기본 포트: `5173`
+- 백엔드(API) 로컬 서버: `http://localhost:8787` (Wrangler non-interactive 구동)
+- 프론트엔드 개발 서버: `http://localhost:5173` (Vite)
 - 브라우저 접속: `http://localhost:5173/lotto`
+
 
 ---
 

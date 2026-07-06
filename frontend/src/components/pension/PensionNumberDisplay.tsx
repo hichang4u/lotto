@@ -1,8 +1,16 @@
 export function PensionDigitBall({ value, color }: { value: string; color: string }) {
     return (
         <div
-            className="flex h-[clamp(50px,8.6vw,78px)] w-[clamp(50px,8.6vw,78px)] items-center justify-center rounded-full border-[3px] bg-white text-[clamp(24px,4vw,40px)] font-bold text-slate-800 shadow-sm"
-            style={{ borderColor: color }}
+            className="flex h-[clamp(50px,8.6vw,76px)] w-[clamp(50px,8.6vw,76px)] items-center justify-center rounded-full text-[clamp(24px,4vw,38px)] font-black"
+            style={{
+                border: '3px solid #000000',
+                background: '#ffffff',
+                color: '#000000',
+                boxShadow: '4px 4px 0px 0px #000000',
+                // 안쪽으로 자릿수 구분을 위한 네오 아웃라인 포인트 처리
+                outline: `4px solid ${color}`,
+                outlineOffset: '-4px',
+            }}
         >
             {value}
         </div>
@@ -29,21 +37,23 @@ export function PensionNumberRow({
     const digits = number.padStart(6, '0').slice(-6).split('');
 
     return (
-        <div className="grid gap-5 border-t border-slate-100 py-6 lg:grid-cols-[1.05fr_1.55fr] lg:items-center lg:gap-12">
+        /* 경계 구분선을 굵은 블랙 실선으로 처리 */
+        <div className="grid gap-5 border-t-3 border-black py-6 lg:grid-cols-[1.05fr_1.55fr] lg:items-center lg:gap-12">
             <div className="text-center lg:text-left">
-                <div className="text-[24px] font-semibold tracking-[-0.04em] text-slate-950 sm:text-[34px] lg:text-[38px]">
-                    {label} <span className="mx-1.5 text-slate-300">|</span> {subtitle}
+                <div className="text-[24px] font-black tracking-tighter text-black sm:text-[32px] lg:text-[36px]">
+                    {label} <span className="mx-1.5 text-black">|</span> <span className="text-slate-700">{subtitle}</span>
                 </div>
             </div>
 
+            {/* 조 및 숫자 볼 영역 */}
             <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
                 {showBand && band ? (
                     <div className="text-center">
                         <PensionDigitBall value={band} color={DIGIT_COLORS[0]} />
-                        <div className="mt-2 text-sm font-medium text-slate-500">조</div>
+                        <div className="mt-2 text-sm font-black text-black">조</div>
                     </div>
                 ) : prefixLabel ? (
-                    <div className="px-1 text-base font-medium text-slate-500 sm:text-lg">{prefixLabel}</div>
+                    <div className="px-1 text-base font-black text-black sm:text-lg">{prefixLabel}</div>
                 ) : null}
                 {digits.map((digit, index) => (
                     <PensionDigitBall

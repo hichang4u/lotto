@@ -1,12 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=SUIT:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=SUIT:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@500;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color: #1e293b;
-  background: #f8fafc;
+  color: #000000;
+  background: #f4f4f0; /* 검로드 특유의 부드럽고 빈티지한 미색 배경 */
   font-family: 'SUIT', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -21,32 +22,143 @@
 body {
   margin: 0;
   min-width: 320px;
+  background-color: #f4f4f0;
 }
 
-button,
-input {
-  font: inherit;
+/* ==========================================================================
+   Neo Brutalism (Gumroad Style) Utility Classes
+   ========================================================================== */
+
+/* 굵은 테두리와 흐려짐 없는 하드 섀도우 카드 */
+.neo-card {
+  border: 3px solid #000000;
+  box-shadow: 6px 6px 0px 0px #000000;
+  border-radius: 12px;
+  background-color: #ffffff;
+  transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
-.btn-primary {
-  background: #0f172a;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+.neo-card--soft {
+  background-color: #fffdf5; /* 약간의 아이보리 빛의 부드러운 배경 */
 }
 
-.btn-primary:hover {
-  background: #1e293b;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
+/* 네오 브루탈리즘 공통 버튼 스타일 */
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  color: #000000;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  box-shadow: 4px 4px 0px 0px #000000;
+  background-color: #ffffff;
+  transition: transform 100ms ease, box-shadow 100ms ease, background-color 100ms ease;
+  cursor: pointer;
+  user-select: none;
 }
 
-.btn-secondary {
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+.neo-btn:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #000000;
 }
 
-.btn-secondary:hover {
-  background: #f1f5f9;
+.neo-btn:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px 0px #000000;
 }
+
+.neo-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 4px 4px 0px 0px #000000 !important;
+}
+
+/* 버튼 테마 색상 */
+.neo-btn-primary {
+  background-color: #ffd400; /* 검로드 대표 옐로우 */
+}
+.neo-btn-primary:hover:not(:disabled) {
+  background-color: #ffe033;
+}
+
+.neo-btn-secondary {
+  background-color: #ffffff;
+}
+.neo-btn-secondary:hover:not(:disabled) {
+  background-color: #f3f3f0;
+}
+
+.neo-btn-blue {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+.neo-btn-blue:hover:not(:disabled) {
+  background-color: #60a5fa;
+}
+
+.neo-btn-purple {
+  background-color: #8b5cf6;
+  color: #ffffff;
+}
+.neo-btn-purple:hover:not(:disabled) {
+  background-color: #a78bfa;
+}
+
+/* 인풋 박스 스타일 */
+.neo-input {
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #000000;
+  font-weight: 700;
+  outline: none;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.neo-input:focus {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #000000;
+}
+
+/* 둥근 형태의 알약 배지/텍스트 칩 */
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.neo-badge-blue {
+  background-color: #dbeafe;
+}
+
+.neo-badge-green {
+  background-color: #dcfce7;
+}
+
+.neo-badge-yellow {
+  background-color: #fef9c3;
+}
+
+.neo-badge-purple {
+  background-color: #f3e8ff;
+}
+
+/* ==========================================================================
+   Header & App Shell
+   ========================================================================== */
 
 #root, .app-shell {
   min-height: 100vh;
@@ -54,66 +166,90 @@ input {
 
 .header-brand-logo {
   display: block;
-  width: 128px;
+  width: 120px;
   height: auto;
   flex-shrink: 0;
+  filter: drop-shadow(1px 1px 0px #000);
 }
 
 .header-nav {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
+  border: 3px solid #000000;
+  box-shadow: 3px 3px 0px 0px #000000;
+  border-radius: 10px;
   background: #ffffff;
+  overflow: hidden;
 }
 
 .header-nav-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 999px;
-  color: #64748b;
+  min-height: 38px;
+  padding: 0 16px;
+  color: #000000;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: -0.01em;
   text-decoration: none;
-  transition: all 200ms ease;
+  background-color: #ffffff;
+  border-right: 3px solid #000000;
+  transition: background-color 100ms ease;
+}
+
+.header-nav-link:last-child {
+  border-right: none;
 }
 
 .header-nav-link:hover {
-  color: #0f172a;
+  background-color: #f3f3f0;
 }
 
 .header-nav-link.is-active {
-  background: #f1f5f9;
-  color: #0f172a;
+  background-color: #ffd400; /* 활성화 시 노란색 채우기 */
 }
+
+/* ==========================================================================
+   Lotto & Components
+   ========================================================================== */
 
 .lotto-mark-image {
   display: block;
-  width: min(240px, 56vw);
+  width: min(220px, 52vw);
   height: auto;
   margin-bottom: 6px;
 }
 
 .result-arrow-shell {
   display: inline-flex;
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   align-items: center;
   justify-content: center;
+  border: 3px solid #000000;
   border-radius: 999px;
-  background: transparent;
-  color: #cbd5e1;
-  transition: color 200ms ease;
+  background-color: #ffffff;
+  box-shadow: 3px 3px 0px 0px #000000;
+  color: #000000;
+  transition: all 100ms ease;
+  cursor: pointer;
 }
 
-.result-arrow-shell:hover {
-  color: #64748b;
+.result-arrow-shell:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px 0px #000000;
+  background-color: #ffd400;
+}
+
+.result-arrow-shell:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0px 0px 0px 0px #000000;
+}
+
+.result-arrow-shell:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .latest-feature-heading {
@@ -140,16 +276,16 @@ input {
 
 @media (min-width: 1024px) {
   .result-arrow-left {
-    left: -16px;
+    left: -12px;
   }
   .result-arrow-right {
-    right: -16px;
+    right: -12px;
   }
 }
 
 .result-divider {
-  height: 1px;
-  background: #e2e8f0;
+  height: 3px;
+  background-color: #000000;
 }
 
 .result-number-group {
@@ -160,35 +296,35 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .result-label-line {
-  width: 120px;
-  height: 1px;
-  background: #e2e8f0;
+  width: 80px;
+  height: 3px;
+  background-color: #000000;
 }
 
 .result-label-line.short {
-  width: 64px;
+  width: 48px;
 }
 
 .result-label-text {
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 600;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 800;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
 .ball-pop {
-  animation: ball-pop 0.45s cubic-bezier(0.2, 1, 0.3, 1) both;
+  animation: ball-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
 
 @keyframes ball-pop {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.92);
+    transform: translateY(14px) scale(0.85);
   }
   to {
     opacity: 1;
@@ -196,41 +332,49 @@ input {
   }
 }
 
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+
 @media (max-width: 640px) {
   .header-brand-logo {
-    width: 102px;
+    width: 96px;
   }
 
   .header-nav {
-    gap: 2px;
-    padding: 3px;
+    border-width: 2px;
+    box-shadow: 2px 2px 0px 0px #000000;
   }
 
   .header-nav-link {
-    min-height: 30px;
-    padding: 0 10px;
+    min-height: 34px;
+    padding: 0 12px;
     font-size: 12px;
+    border-right-width: 2px;
   }
 
   .result-label-row {
-    gap: 10px;
+    gap: 8px;
   }
 
   .result-arrow-shell {
-    width: 52px;
-    height: 52px;
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+    box-shadow: 2px 2px 0px 0px #000000;
   }
 
   .result-label-line {
-    width: 52px;
+    width: 40px;
+    height: 2px;
   }
 
   .result-label-line.short {
-    width: 36px;
+    width: 24px;
   }
 
   .result-label-text {
-    font-size: 13px;
+    font-size: 11px;
   }
 }
 
@@ -245,6 +389,6 @@ input {
   }
 
   .lotto-mark-image {
-    width: min(210px, 62vw);
+    width: min(190px, 58vw);
   }
 }

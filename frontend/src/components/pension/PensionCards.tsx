@@ -8,23 +8,27 @@ export function PensionRecommendationCard({ set }: { set: PensionRecommendationS
     const ruleName = set.meta.ruleId ? (PENSION_RULE_LABELS[set.meta.ruleId] ?? set.meta.ruleId) : null;
 
     return (
-        <div className="rounded-[28px] border border-slate-200/60 bg-white px-4 py-5 shadow-sm sm:px-6 sm:py-7">
+        <div className="neo-card px-4 py-5 sm:px-6 sm:py-7 bg-white">
             <div className="text-center">
-                <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                    {set.label}
+                <div className="mb-2">
+                    <span className="neo-badge neo-badge-purple">
+                        {set.label}
+                    </span>
                 </div>
-                <h3 className="mt-4 text-xl font-bold text-slate-800 sm:text-[28px]">
+                <h3 className="mt-2 text-xl font-black text-black sm:text-[28px]">
                     연금복권 추천번호
                 </h3>
+                
+                {/* 하위 규칙 및 가중치 정보 표시 */}
                 {(set.meta.ruleWeight || ruleName) && (
-                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 sm:text-sm">
+                    <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
                         {set.meta.ruleWeight ? (
-                            <span className="rounded-full border border-slate-100 bg-slate-50 px-3 py-1 font-semibold text-slate-600">
+                            <span className="neo-badge neo-badge-blue py-1 text-xs">
                                 가중치 {set.meta.ruleWeight.toFixed(3)}
                             </span>
                         ) : null}
                         {ruleName ? (
-                            <span className="rounded-full border border-slate-100 bg-slate-50 px-3 py-1 font-medium text-slate-600">
+                            <span className="neo-badge neo-badge-yellow py-1 text-xs">
                                 {ruleName}
                             </span>
                         ) : null}
@@ -34,8 +38,9 @@ export function PensionRecommendationCard({ set }: { set: PensionRecommendationS
 
             <div className="result-divider mt-7" />
 
+            {/* 추천 숫자 목록 */}
             <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
-                <div className="px-1 text-base font-medium text-slate-500 sm:text-lg">각조</div>
+                <div className="px-1 text-base font-black text-black sm:text-lg">각조</div>
                 {set.number.split('').map((digit, index) => (
                     <PensionDigitBall key={`${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} />
                 ))}
@@ -47,14 +52,12 @@ export function PensionRecommendationCard({ set }: { set: PensionRecommendationS
                 <span className="result-label-line" />
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-500 sm:text-base">
-                <span>합계 {set.meta.sum}</span>
-                <span className="text-slate-300">/</span>
-                <span>홀수 {set.meta.oddCount}개</span>
-                <span className="text-slate-300">/</span>
-                <span>고유숫자 {set.meta.uniqueDigitCount}개</span>
-                <span className="text-slate-300">/</span>
-                <span>최대 중복 {set.meta.maxDuplicateCount}개</span>
+            {/* 개별 메타 속성 분석 */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-bold text-slate-700 sm:text-sm">
+                <span className="neo-badge">합계 {set.meta.sum}</span>
+                <span className="neo-badge">홀수 {set.meta.oddCount}개</span>
+                <span className="neo-badge">고유숫자 {set.meta.uniqueDigitCount}개</span>
+                <span className="neo-badge">최대 중복 {set.meta.maxDuplicateCount}개</span>
             </div>
         </div>
     );
@@ -64,35 +67,38 @@ export function FeaturedPensionRecommendationCard({ set }: { set: PensionRecomme
     const ruleName = set.meta.ruleId ? (PENSION_RULE_LABELS[set.meta.ruleId] ?? set.meta.ruleId) : null;
 
     return (
-        <div className="rounded-[30px] border border-slate-200/60 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-7">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="neo-card px-5 py-6 sm:px-7 sm:py-7 bg-[#fffdf5]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b-2 border-black pb-4">
                 <div>
-                    <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                        대표 추천 1세트
+                    <div className="mb-2">
+                        <span className="neo-badge neo-badge-yellow">
+                            대표 추천 1세트
+                        </span>
                     </div>
-                    <h3 className="mt-4 text-2xl font-bold text-slate-800 sm:text-[32px]">
+                    <h3 className="mt-2 text-2xl font-black text-black sm:text-[32px] tracking-tighter">
                         {set.label}
                     </h3>
-                    <p className="mt-2 text-sm text-slate-500 sm:text-base">
+                    <p className="mt-2 text-sm font-bold text-slate-700">
                         현재 추천 성향 우선순위에서 가장 먼저 선택된 대표 조합입니다.
                     </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 sm:text-sm">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
                         {set.meta.ruleWeight ? (
-                            <span className="rounded-full border border-slate-100 bg-slate-50 px-3 py-1 font-semibold text-slate-600">
+                            <span className="neo-badge neo-badge-blue py-1 text-xs">
                                 가중치 {set.meta.ruleWeight.toFixed(3)}
                             </span>
                         ) : null}
                         {ruleName ? (
-                            <span className="rounded-full border border-slate-100 bg-slate-50 px-3 py-1 font-medium text-slate-600">
+                            <span className="neo-badge neo-badge-purple py-1 text-xs">
                                 {ruleName}
                             </span>
                         ) : null}
                     </div>
                 </div>
 
-                <div className="rounded-[24px] border border-white/70 bg-white/75 px-4 py-4 sm:px-5">
+                {/* 내측 숫자 볼 영역 */}
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[2px_2px_0px_0px_#000000]">
                     <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
-                        <div className="px-1 text-base font-medium text-slate-500 sm:text-lg">각조</div>
+                        <div className="px-1 text-base font-black text-black sm:text-lg">각조</div>
                         {set.number.split('').map((digit, index) => (
                             <PensionDigitBall key={`featured-${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} />
                         ))}
@@ -100,22 +106,23 @@ export function FeaturedPensionRecommendationCard({ set }: { set: PensionRecomme
                 </div>
             </div>
 
+            {/* 하단 개별 통계 세부 분석 */}
             <div className="mt-5 grid gap-3 sm:grid-cols-4">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
-                    <div className="text-xs text-slate-500">합계</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-800">{set.meta.sum}</div>
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-3 text-center sm:text-left shadow-[2px_2px_0px_0px_#000000]">
+                    <div className="text-xs font-bold text-slate-700">합계</div>
+                    <div className="mt-1 text-lg font-black text-black">{set.meta.sum}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
-                    <div className="text-xs text-slate-500">홀수 개수</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-800">{set.meta.oddCount}개</div>
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-3 text-center sm:text-left shadow-[2px_2px_0px_0px_#000000]">
+                    <div className="text-xs font-bold text-slate-700">홀수 개수</div>
+                    <div className="mt-1 text-lg font-black text-black">{set.meta.oddCount}개</div>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
-                    <div className="text-xs text-slate-500">고유 숫자</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-800">{set.meta.uniqueDigitCount}개</div>
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-3 text-center sm:text-left shadow-[2px_2px_0px_0px_#000000]">
+                    <div className="text-xs font-bold text-slate-700">고유 숫자</div>
+                    <div className="mt-1 text-lg font-black text-black">{set.meta.uniqueDigitCount}개</div>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
-                    <div className="text-xs text-slate-500">최대 중복</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-800">{set.meta.maxDuplicateCount}개</div>
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-3 text-center sm:text-left shadow-[2px_2px_0px_0px_#000000]">
+                    <div className="text-xs font-bold text-slate-700">최대 중복</div>
+                    <div className="mt-1 text-lg font-black text-black">{set.meta.maxDuplicateCount}개</div>
                 </div>
             </div>
         </div>
@@ -124,25 +131,27 @@ export function FeaturedPensionRecommendationCard({ set }: { set: PensionRecomme
 
 export function PensionRulePerformanceCard({ item }: { item: PensionRulePerformance }) {
     return (
-        <div className="rounded-[24px] border border-slate-200/60 bg-white px-4 py-4 shadow-sm sm:px-5">
-            <div className="flex items-start justify-between gap-3">
+        /* 카드 중첩에 의한 테두리 번잡함을 줄이기 위해 외부 검은 외곽선 제거 및 회색 백그라운드 처리 */
+        <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-4">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
                 <div>
-                    <div className="text-base font-bold text-slate-800">{PENSION_RULE_LABELS[item.ruleId] ?? item.label}</div>
-                    <div className="mt-1 text-xs text-slate-500">생성 {item.generatedCount}회</div>
+                    <div className="text-base font-black text-black">{PENSION_RULE_LABELS[item.ruleId] ?? item.label}</div>
+                    <div className="mt-1 text-xs font-bold text-slate-500">생성 {item.generatedCount}회</div>
                 </div>
-                <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                <span className="neo-badge neo-badge-purple text-xs">
                     평균 정확 일치 {item.averageExactMatches.toFixed(3)}
-                </div>
+                </span>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-500 sm:text-sm">
-                <div className="rounded-2xl bg-slate-50 px-3 py-2">
-                    <div>3자리 이상 일치</div>
-                    <div className="mt-1 font-semibold text-slate-900">{item.exactMatch3PlusRate.toFixed(1)}%</div>
+            {/* 규칙별 세부 일치 지표 (내부 블랙 보더 제거 및 심플 레이아웃화) */}
+            <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-bold text-slate-700 sm:text-sm">
+                <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-2 shadow-sm">
+                    <div className="text-[10px] text-slate-500">3자리 이상 일치</div>
+                    <div className="mt-1 font-black text-black">{item.exactMatch3PlusRate.toFixed(1)}%</div>
                 </div>
-                <div className="rounded-2xl bg-slate-50 px-3 py-2">
-                    <div>4자리 이상 일치</div>
-                    <div className="mt-1 font-semibold text-slate-900">{item.exactMatch4PlusRate.toFixed(1)}%</div>
+                <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-2 shadow-sm">
+                    <div className="text-[10px] text-slate-500">4자리 이상 일치</div>
+                    <div className="mt-1 font-black text-black">{item.exactMatch4PlusRate.toFixed(1)}%</div>
                 </div>
             </div>
         </div>

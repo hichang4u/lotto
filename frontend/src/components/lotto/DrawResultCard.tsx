@@ -28,12 +28,14 @@ export function DrawResultCard({
     const oddCount = numbers.filter(num => num % 2 === 1).length;
     const sum = numbers.reduce((total, num) => total + num, 0);
 
+    // 최신 회차 결과 (메인 히어로 카드) 레이아웃
     if (variant === 'latest') {
         return (
-            <div className="rounded-[30px] border border-slate-200/60 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8 lg:px-12 lg:py-10">
+            <div className="neo-card neo-card--soft px-5 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
+                {/* 상단 마지막 동기화 일자 상태 노티 바 */}
                 {statusText && (
-                    <div className="mb-5 rounded-2xl bg-slate-50 px-4 py-3 text-center sm:mb-7">
-                        <p className="text-xs font-medium text-slate-500 sm:text-sm">{statusText}</p>
+                    <div className="mb-5 border-2 border-black bg-white rounded-xl px-4 py-2.5 text-center shadow-[3px_3px_0px_0px_#000] sm:mb-7">
+                        <p className="text-xs font-bold text-slate-700 sm:text-sm">{statusText}</p>
                     </div>
                 )}
 
@@ -45,44 +47,56 @@ export function DrawResultCard({
                     />
                 </div>
 
+                {/* 중앙 회차 헤딩 및 좌우 화살표 */}
                 <div className="latest-feature-heading mt-8 sm:mt-10">
-                    <div className="result-arrow-shell result-arrow-left">
-                        <ChevronLeft className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={1.5} />
-                    </div>
+                    <button 
+                        className="result-arrow-shell result-arrow-left"
+                        onClick={onSecondaryAction}
+                        title="이전 회차"
+                    >
+                        <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.5} />
+                    </button>
                     <div className="text-center">
-                        <div className="text-[42px] font-semibold tracking-[-0.05em] text-slate-950 sm:text-[56px]">{draw.drwNo}회</div>
-                        <div className="mt-1 text-[18px] font-medium text-slate-500 sm:text-[20px]">{draw.drwNoDate}</div>
+                        <div className="text-[46px] font-black tracking-tighter text-black sm:text-[60px]">{draw.drwNo}회</div>
+                        <div className="mt-1 text-sm font-bold text-slate-700 sm:text-base">{draw.drwNoDate} 추첨</div>
                     </div>
-                    <div className="result-arrow-shell result-arrow-right text-slate-300">
-                        <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={1.5} />
-                    </div>
+                    <button 
+                        className="result-arrow-shell result-arrow-right"
+                        disabled
+                        title="최신 회차입니다"
+                    >
+                        <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.5} />
+                    </button>
                 </div>
 
                 <div className="result-divider mt-8 sm:mt-10" />
 
+                {/* 로또 볼 및 보너스 볼 영역 */}
                 <div className="mt-9 flex items-center justify-center gap-3 sm:gap-4 lg:gap-5">
                     {numbers.map((num, i) => (
                         <Ball key={i} num={num} size="responsive" delay={i * 20} />
                     ))}
-                    <span className="text-4xl font-light text-slate-300 sm:text-5xl">+</span>
+                    <span className="text-3xl font-black text-black sm:text-4xl">+</span>
                     <div className="relative">
                         <Ball num={draw.bnusNo} size="responsive" />
                         <BonusBadge />
                     </div>
                 </div>
 
+                {/* 1등 당첨 금액 디스플레이 */}
                 <div className="mt-12 text-center">
-                    <p className="text-[16px] font-medium text-slate-500 sm:text-[18px]">1등 당첨금</p>
-                    <p className="mt-3 text-[36px] font-semibold tracking-[-0.05em] text-slate-950 sm:text-[54px]">
+                    <p className="text-sm font-extrabold text-slate-700 sm:text-base">1등 총 당첨금액</p>
+                    <p className="mt-2.5 text-[34px] font-black tracking-tighter text-[#2563eb] sm:text-[52px]">
                         {formatMoneyKRW(draw.firstWinamnt)}
                     </p>
                 </div>
 
-                <div className="mt-10 grid grid-cols-2 gap-3 sm:mt-12 sm:gap-4">
+                {/* 하단 제어 버튼 그룹 */}
+                <div className="mt-10 grid grid-cols-2 gap-4 sm:mt-12">
                     <button
                         type="button"
                         onClick={onSecondaryAction}
-                        className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-5 sm:text-lg"
+                        className="neo-btn neo-btn-secondary min-h-[52px] text-sm sm:text-base"
                     >
                         {secondaryActionLabel ?? '회차 상세 보기'}
                     </button>
@@ -90,58 +104,54 @@ export function DrawResultCard({
                         type="button"
                         onClick={onPrimaryAction}
                         disabled={primaryDisabled}
-                        className="inline-flex min-h-[56px] items-center justify-center rounded-2xl bg-slate-900 px-3 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 sm:px-5 sm:text-lg"
+                        className="neo-btn neo-btn-primary min-h-[52px] text-sm sm:text-base"
                     >
                         {primaryActionLabel ?? '최신 결과 동기화'}
                     </button>
                 </div>
 
-                <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-500 sm:mt-8 sm:text-base">
-                    <span>보너스 {draw.bnusNo}</span>
-                    <span className="text-slate-300">/</span>
-                    <span>번호 합계 {sum}</span>
-                    <span className="text-slate-300">/</span>
-                    <span>홀수 {oddCount}개</span>
+                {/* 하단 요약 배지/메타 정보 */}
+                <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-bold text-slate-700 sm:mt-8 sm:text-sm">
+                    <span className="neo-badge neo-badge-yellow">보너스 {draw.bnusNo}</span>
+                    <span className="neo-badge neo-badge-blue">번호 합계 {sum}</span>
+                    <span className="neo-badge neo-badge-purple">홀수 {oddCount}개</span>
                 </div>
             </div>
         );
     }
 
+    // 일반 회차 조회 결과 레이아웃
     return (
-        <div className="rounded-[24px] border border-slate-200/60 bg-white px-5 py-6 shadow-sm sm:rounded-[28px] sm:px-8 sm:py-9 lg:px-12 lg:py-10">
+        <div className="neo-card px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
             <div className="relative text-center">
-                <div className="pointer-events-none absolute left-0 top-1/2 hidden -translate-y-1/2 lg:flex">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
-                        <ChevronLeft className="h-7 w-7" strokeWidth={1.5} />
-                    </div>
+                <div className="mb-3">
+                    <span className="neo-badge neo-badge-green">
+                        {chipLabel}
+                    </span>
                 </div>
-                <div className="pointer-events-none absolute right-0 top-1/2 hidden -translate-y-1/2 lg:flex">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
-                        <ChevronRight className="h-7 w-7" strokeWidth={1.5} />
-                    </div>
-                </div>
-                <div className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
-                    {chipLabel}
-                </div>
-                <h3 className="mt-4 text-[28px] font-semibold tracking-[-0.04em] text-slate-950 sm:text-[42px]">
-                    제 <span className="text-emerald-600">{draw.drwNo}</span>회 추첨 결과
+                <h3 className="mt-2 text-[26px] font-black tracking-tighter text-black sm:text-[36px]">
+                    제 <span className="text-[#2563eb]">{draw.drwNo}</span>회 추첨 결과
                 </h3>
-                <p className="mt-3 text-base font-medium text-slate-500 sm:text-[18px]">{draw.drwNoDate} 추첨</p>
-                <div className="mt-5 inline-flex rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                    1등 당첨금 {formatMoneyKRW(draw.firstWinamnt)}
+                <p className="mt-1 text-sm font-bold text-slate-700 sm:text-base">{draw.drwNoDate} 추첨</p>
+                
+                <div className="mt-4 inline-flex">
+                    <span className="neo-badge neo-badge-yellow py-1.5 px-4 text-xs sm:text-sm">
+                        1등 당첨금 {formatMoneyKRW(draw.firstWinamnt)}
+                    </span>
                 </div>
             </div>
 
-            <div className="result-divider mt-8" />
+            <div className="result-divider mt-7" />
 
-            <div className="mt-8 flex flex-col items-center gap-5 lg:flex-row lg:items-end lg:justify-center lg:gap-10">
+            {/* 당첨 번호 그룹 및 보너스 번호 매핑 */}
+            <div className="mt-8 flex flex-col items-center gap-6 lg:flex-row lg:items-end lg:justify-center lg:gap-10">
                 <div className="result-number-group">
                     <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
                         {numbers.map((num, i) => (
                             <Ball key={i} num={num} size="md" delay={i * 20} />
                         ))}
                     </div>
-                    <div className="result-label-row mt-5">
+                    <div className="result-label-row mt-4">
                         <span className="result-label-line" />
                         <span className="result-label-text">당첨번호</span>
                         <span className="result-label-line" />
@@ -149,7 +159,7 @@ export function DrawResultCard({
                 </div>
 
                 <div className="flex items-center justify-center gap-4 lg:gap-8">
-                    <span className="text-4xl font-light text-slate-300 sm:text-5xl">+</span>
+                    <span className="text-3xl font-black text-black sm:text-4xl">+</span>
                     <div className="result-number-group">
                         <div className="flex justify-center">
                             <div className="relative">
@@ -157,7 +167,7 @@ export function DrawResultCard({
                                 <BonusBadge />
                             </div>
                         </div>
-                        <div className="result-label-row mt-5">
+                        <div className="result-label-row mt-4">
                             <span className="result-label-line short" />
                             <span className="result-label-text">보너스번호</span>
                             <span className="result-label-line short" />
@@ -166,18 +176,19 @@ export function DrawResultCard({
                 </div>
             </div>
 
-            <div className="mt-8 grid gap-2 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
-                    <div className="text-[11px] font-medium text-slate-500">보너스 번호</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-800">{draw.bnusNo}</div>
+            {/* 개별 분석 상세 박스 목록 */}
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-3 text-center sm:text-left shadow-[2px_2px_0px_0px_#000]">
+                    <div className="text-[11px] font-black text-slate-700">보너스 번호</div>
+                    <div className="mt-1 text-lg font-black text-black">{draw.bnusNo}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
-                    <div className="text-[11px] font-medium text-slate-500">번호 합계</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-800">{sum}</div>
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-3 text-center sm:text-left shadow-[2px_2px_0px_0px_#000]">
+                    <div className="text-[11px] font-black text-slate-700">번호 합계</div>
+                    <div className="mt-1 text-lg font-black text-black">{sum}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-center sm:text-left">
-                    <div className="text-[11px] font-medium text-slate-500">홀수 개수</div>
-                    <div className="mt-1 text-lg font-semibold text-slate-800">{oddCount}</div>
+                <div className="border-2 border-black bg-white rounded-xl px-4 py-3 text-center sm:text-left shadow-[2px_2px_0px_0px_#000]">
+                    <div className="text-[11px] font-black text-slate-700">홀수 개수</div>
+                    <div className="mt-1 text-lg font-black text-black">{oddCount}</div>
                 </div>
             </div>
         </div>

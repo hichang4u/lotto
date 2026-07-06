@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --show-interactive-dev-session=false --port=8787",
     "deploy": "node scripts/deploy.mjs",
     "init-db": "wrangler d1 execute lotto_db --local --file=./schema.sql",
     "init-db:remote": "wrangler d1 execute lotto_db --remote --file=./schema.sql",
