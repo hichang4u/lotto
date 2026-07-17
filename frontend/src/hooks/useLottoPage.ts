@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { DrawResult, LottoSet, LottoRuleWeight, LottoBacktestDiagnostics } from '../types';
 import {
     API_URL,
-    PAGE_SIZE,
     FALLBACK_LABELS,
     LAST_SYNC_STORAGE_KEY,
     LAST_SYNC_DRAW_STORAGE_KEY,
@@ -35,15 +34,31 @@ export function useLottoPage() {
     });
 
     const [searchInput, setSearchInput] = useState('');
-    const [searchResult, setSearchResult] = useState<DrawResult | null>(null);
     const [searchError, setSearchError] = useState('');
-    const [page, setPage] = useState(0);
+    
+    // 현재 선택하여 조회 중인 회차 번호 상태
+    const [currentDrawNo, setCurrentDrawNo] = useState<number | null>(null);
+
+    // 검색이나 온디맨드 내비게이션으로 로드된 단일 회차 결과 임시 저장소
+    const [searchedDraw, setSearchedDraw] = useState<DrawResult | null>(null);
+
+    // 마지막으로 화면에 표시한 회차 (온디맨드 로딩 중에도 카드를 유지하기 위함)
+    const lastShownDrawRef = useRef<DrawResult | null>(null);
 
     const loadResults = async () => {
         setResultsLoading(true);
         try {
             const res = await fetch(`${API_URL}/api/results?limit=50`);
-            setResults(res.ok ? await res.json() : []);
+            if (res.ok) {
+                const data = (await res.json()) as DrawResult[];
+                setResults(data);
+                // 현재 보고 있는 회차가 미설정 상태라면 목록의 가장 최신 회차로 지정
+                if (data.length > 0 && currentDrawNo === null) {
+                    setCurrentDrawNo(data[0].drwNo);
+                }
+            } else {
+                setResults([]);
+            }
         } catch {
             setResults([]);
         } finally {
@@ -75,6 +90,10 @@ export function useLottoPage() {
             if (!res.ok || !data.success) throw new Error(data.error || '동기화에 실패했습니다.');
 
             await loadResults();
+            // 동기화 성공 시 새로 받아온 최신 회차 번호로 상태 변경
+            if (data.latestDraw) {
+                setCurrentDrawNo(data.latestDraw);
+            }
             const now = new Date();
             setLastSyncedAt(now);
             setLastSyncedDraw(data.latestDraw ?? null);
@@ -120,18 +139,30 @@ export function useLottoPage() {
         const no = Number(searchInput);
         if (!no || no < 1) return;
         setSearchError('');
-        setSearchResult(null);
+
+        // 이미 로드된 목록이나 캐싱된 검색 결과에 있다면 바로 번호 상태만 업데이트
+        const found = results.find(r => r.drwNo === no);
+        if (found) {
+            setCurrentDrawNo(no);
+            return;
+        }
+        if (searchedDraw && searchedDraw.drwNo === no) {
+            setCurrentDrawNo(no);
+            return;
+        }
+
+        setResultsLoading(true);
         try {
             const res = await fetch(`${API_URL}/api/results?drwNo=${no}`);
             if (!res.ok) { setSearchError(`${no}회차 데이터가 없습니다.`); return; }
-            setSearchResult(await res.json());
+            const drawData = await res.json();
+            setSearchedDraw(drawData);
+            setCurrentDrawNo(no);
         } catch {
             setSearchError('조회 중 오류가 발생했습니다.');
+        } finally {
+            setResultsLoading(false);
         }
-    };
-
-    const scrollToLookupSection = () => {
-        document.getElementById('lookup-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     useEffect(() => {
@@ -139,43 +170,101 @@ export function useLottoPage() {
         loadBacktestDiagnostics();
     }, []);
 
+    // 회차 번호가 바뀌었을 때, results 목록이나 캐시에 데이터가 없으면 온디맨드로 조회해옴
+    useEffect(() => {
+        if (!currentDrawNo) return;
+
+        const foundInResults = results.find(r => r.drwNo === currentDrawNo);
+        if (foundInResults) return;
+
+        if (searchedDraw && searchedDraw.drwNo === currentDrawNo) return;
+
+        const fetchSingleDraw = async () => {
+            setResultsLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/api/results?drwNo=${currentDrawNo}`);
+                if (res.ok) {
+                    const drawData = await res.json();
+                    setSearchedDraw(drawData);
+                } else {
+                    // 없는 회차면 무한 로딩에 빠지지 않도록 직전 표시 회차로 복귀
+                    setCurrentDrawNo(lastShownDrawRef.current?.drwNo ?? null);
+                    setSearchError(`${currentDrawNo}회차 데이터가 없습니다.`);
+                }
+            } catch {
+                // 조회 실패 시에도 직전 표시 회차로 복귀
+                setCurrentDrawNo(lastShownDrawRef.current?.drwNo ?? null);
+                setSearchError('회차 조회 중 오류가 발생했습니다.');
+            } finally {
+                setResultsLoading(false);
+            }
+        };
+
+        fetchSingleDraw();
+    }, [currentDrawNo, results, searchedDraw]);
+
     // 파생 상태
-    const latestDraw = results[0] ?? null;
-    const totalPages = Math.ceil(Math.max(results.length - 1, 0) / PAGE_SIZE);
-    const pagedResults = results.slice(1).slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+    const resolvedDraw = results.find(r => r.drwNo === currentDrawNo) ||
+        (searchedDraw?.drwNo === currentDrawNo ? searchedDraw : null);
+
+    if (resolvedDraw) {
+        lastShownDrawRef.current = resolvedDraw;
+    }
+
+    const currentDraw = resolvedDraw ?? lastShownDrawRef.current;
+    const isStale = !resolvedDraw && currentDraw !== null;
+    
+    // 전체 목록의 최신 회차 번호
+    const maxDrawNo = results[0]?.drwNo ?? 0;
+    
+    const isLatest = currentDrawNo === maxDrawNo;
+    const hasPrevDraw = currentDrawNo !== null && currentDrawNo > 1;
+    const hasNextDraw = currentDrawNo !== null && currentDrawNo < maxDrawNo;
+
+    // 이전 회차(더 과거)로 이동 시 번호 1 감소
+    const goToPreviousDraw = () => {
+        if (hasPrevDraw && currentDrawNo !== null) {
+            setCurrentDrawNo(prev => (prev !== null ? prev - 1 : null));
+        }
+    };
+
+    // 다음 회차(더 최신)로 이동 시 번호 1 증가
+    const goToNextDraw = () => {
+        if (hasNextDraw && currentDrawNo !== null) {
+            setCurrentDrawNo(prev => (prev !== null ? prev + 1 : null));
+        }
+    };
 
     return {
         // state
-        latestDraw,
+        currentDraw,
+        isLatest,
+        hasPrevDraw,
+        hasNextDraw,
         sets,
         ruleWeights,
         backtestDiagnostics,
         backtestLoading,
         loading,
         results,
-        resultsLoading,
+        resultsLoading: resultsLoading || isStale,
         syncLoading,
         syncMessage,
         syncError,
         lastSyncedAt,
         lastSyncedDraw,
         searchInput,
-        searchResult,
         searchError,
-        page,
-        totalPages,
-        pagedResults,
         // actions
         setSearchInput,
-        setSearchResult,
         setSearchError,
-        setPage,
         setSyncMessage,
         setSyncError,
         syncLatestResults,
         generateNumbers,
         loadBacktestDiagnostics,
         searchDraw,
-        scrollToLookupSection,
+        goToPreviousDraw,
+        goToNextDraw,
     };
 }

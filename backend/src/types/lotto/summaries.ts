@@ -44,6 +44,7 @@ export type LottoBacktestSummary = {
       commonRulePassRate: number
       relaxedFallbackRate: number
       randomFallbackRate: number
+      actualRate: number
     }>
   }
 }

@@ -8,21 +8,27 @@ export function DrawResultCard({
     chipLabel,
     variant = 'default',
     onPrimaryAction,
-    onSecondaryAction,
     primaryActionLabel,
-    secondaryActionLabel,
     primaryDisabled = false,
     statusText,
+    onPrevDraw,
+    onNextDraw,
+    hasPrevDraw = false,
+    hasNextDraw = false,
+    isLoading = false,
 }: {
     draw: DrawResult;
     chipLabel: string;
     variant?: 'default' | 'latest';
     onPrimaryAction?: () => void;
-    onSecondaryAction?: () => void;
     primaryActionLabel?: string;
-    secondaryActionLabel?: string;
     primaryDisabled?: boolean;
     statusText?: string;
+    onPrevDraw?: () => void;
+    onNextDraw?: () => void;
+    hasPrevDraw?: boolean;
+    hasNextDraw?: boolean;
+    isLoading?: boolean;
 }) {
     const numbers = [draw.drwtNo1, draw.drwtNo2, draw.drwtNo3, draw.drwtNo4, draw.drwtNo5, draw.drwtNo6];
     const oddCount = numbers.filter(num => num % 2 === 1).length;
@@ -31,7 +37,7 @@ export function DrawResultCard({
     // 최신 회차 결과 (메인 히어로 카드) 레이아웃
     if (variant === 'latest') {
         return (
-            <div className="neo-card neo-card--soft px-5 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
+            <div className="neo-card neo-card--soft relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
                 {/* 상단 마지막 동기화 일자 상태 노티 바 */}
                 {statusText && (
                     <div className="mb-5 border-2 border-black bg-white rounded-xl px-4 py-2.5 text-center shadow-[3px_3px_0px_0px_#000] sm:mb-7">
@@ -51,8 +57,10 @@ export function DrawResultCard({
                 <div className="latest-feature-heading mt-8 sm:mt-10">
                     <button 
                         className="result-arrow-shell result-arrow-left"
-                        onClick={onSecondaryAction}
+                        onClick={onPrevDraw}
+                        disabled={!hasPrevDraw}
                         title="이전 회차"
+                        aria-label="이전 회차"
                     >
                         <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.5} />
                     </button>
@@ -62,8 +70,10 @@ export function DrawResultCard({
                     </div>
                     <button 
                         className="result-arrow-shell result-arrow-right"
-                        disabled
-                        title="최신 회차입니다"
+                        onClick={onNextDraw}
+                        disabled={!hasNextDraw}
+                        title={hasNextDraw ? '다음 회차' : '최신 회차입니다'}
+                        aria-label="다음 회차"
                     >
                         <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.5} />
                     </button>
@@ -92,19 +102,12 @@ export function DrawResultCard({
                 </div>
 
                 {/* 하단 제어 버튼 그룹 */}
-                <div className="mt-10 grid grid-cols-2 gap-4 sm:mt-12">
-                    <button
-                        type="button"
-                        onClick={onSecondaryAction}
-                        className="neo-btn neo-btn-secondary min-h-[52px] text-sm sm:text-base"
-                    >
-                        {secondaryActionLabel ?? '회차 상세 보기'}
-                    </button>
+                <div className="mt-10 sm:mt-12">
                     <button
                         type="button"
                         onClick={onPrimaryAction}
                         disabled={primaryDisabled}
-                        className="neo-btn neo-btn-primary min-h-[52px] text-sm sm:text-base"
+                        className="neo-btn neo-btn-primary w-full min-h-[52px] text-sm sm:text-base"
                     >
                         {primaryActionLabel ?? '최신 결과 동기화'}
                     </button>
@@ -116,13 +119,23 @@ export function DrawResultCard({
                     <span className="neo-badge neo-badge-blue">번호 합계 {sum}</span>
                     <span className="neo-badge neo-badge-purple">홀수 {oddCount}개</span>
                 </div>
+
+                {/* 로딩 오버레이 */}
+                {isLoading && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1.5px] transition-all duration-200">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+                            <span className="text-xs font-black text-black">불러오는 중...</span>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
 
     // 일반 회차 조회 결과 레이아웃
     return (
-        <div className="neo-card px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+        <div className="neo-card relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
             <div className="relative text-center">
                 <div className="mb-3">
                     <span className="neo-badge neo-badge-green">
@@ -191,6 +204,16 @@ export function DrawResultCard({
                     <div className="mt-1 text-lg font-black text-black">{oddCount}</div>
                 </div>
             </div>
+
+            {/* 로딩 오버레이 */}
+            {isLoading && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1.5px] transition-all duration-200">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+                        <span className="text-xs font-black text-black">불러오는 중...</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

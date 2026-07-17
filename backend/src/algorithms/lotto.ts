@@ -203,7 +203,6 @@ function buildWeights(draws: DrawNumbersRow[]) {
     for (const col of COLS) coldSet.add(row[col])
   }
 
-  const maxFreq = Math.max(...freqMap.values(), 1)
   const maxRecent = Math.max(...recentMap.values(), 1)
 
   const priorMap = new Map<number, number>()

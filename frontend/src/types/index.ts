@@ -95,6 +95,7 @@ export type LottoRulePerformance = {
     commonRulePassRate: number;
     relaxedFallbackRate: number;
     randomFallbackRate: number;
+    actualRate: number;
 };
 
 export type LottoBacktestDiagnostics = {

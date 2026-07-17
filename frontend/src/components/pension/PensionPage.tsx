@@ -1,4 +1,5 @@
-import { ChevronRight, Info, Search, Sparkles } from 'lucide-react';
+import { Info, Search, Sparkles } from 'lucide-react';
+import { formatDateTime } from '../../utils/format';
 import { usePensionPage } from '../../hooks/usePensionPage';
 import { PENSION_RULE_LABELS } from '../../constants';
 import { SectionCard } from '../ui/SectionCard';
@@ -18,8 +19,8 @@ export function PensionPage({
     onSyncError: (err: string) => void;
 }) {
     const {
-        latestPensionDraw,
-        pensionLoading,
+        currentPensionDraw,
+        resultsLoading,
         pensionError,
         pensionSyncLoading,
         pensionGenerateLoading,
@@ -28,15 +29,20 @@ export function PensionPage({
         pensionBacktestDiagnostics,
         pensionBacktestLoading,
         pensionSearchInput,
-        pensionSearchResult,
         pensionSearchError,
+        isLatest,
+        hasPrevDraw,
+        hasNextDraw,
+        lastSyncedAt,
+        lastSyncedDraw,
         setPensionSearchInput,
-        setPensionSearchResult,
         setPensionSearchError,
         syncLatestPensionResults,
         generatePensionNumbers,
         loadPensionBacktestDiagnostics,
         searchPensionDraw,
+        goToPreviousDraw,
+        goToNextDraw,
     } = usePensionPage();
 
     const featuredRecommendation = pensionRecommendations[0] ?? null;
@@ -47,37 +53,64 @@ export function PensionPage({
         /* 전역 여백 확보를 위한 space-y-10 sm:space-y-12 설정 */
         <div className="space-y-10 sm:space-y-12">
             {/* 회차별 당첨번호 섹션 */}
-            <section>
-                {/* 상단 헤딩 영역 및 회차 표시 */}
-                <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
+            <section className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-700">연금복권720+</p>
-                        <h2 className="mt-1 text-2xl font-black tracking-tighter text-black sm:text-3xl">회차별 당첨번호</h2>
+                        <h2 className="mt-1 text-2xl font-black tracking-tighter text-black sm:text-3xl">회차별 당첨결과</h2>
                     </div>
-                    <span className="neo-badge neo-badge-purple py-2 px-4 text-xs sm:text-sm font-black">
-                        <span>{latestPensionDraw ? `${latestPensionDraw.draw_no}회` : '회차 선택'}</span>
-                        <ChevronRight className="ml-1.5 h-4 w-4 inline-block rotate-90 text-black" />
-                    </span>
+                    {/* 미니 검색 폼 */}
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            min={1}
+                            value={pensionSearchInput}
+                            onChange={e => {
+                                setPensionSearchInput(e.target.value);
+                                setPensionSearchError('');
+                            }}
+                            onKeyDown={e => e.key === 'Enter' && searchPensionDraw()}
+                            placeholder="회차 검색 (예: 306)"
+                            className="neo-input h-10 w-44 px-3 text-xs text-black"
+                        />
+                        <button
+                            onClick={searchPensionDraw}
+                            className="neo-btn neo-btn-purple inline-flex h-10 px-3 text-xs"
+                        >
+                            <Search className="h-3.5 w-3.5 mr-1 text-black" />
+                            조회
+                        </button>
+                    </div>
                 </div>
 
-                <div className="mb-3 flex justify-end">
-                    <button
-                        onClick={handleSync}
-                        disabled={pensionSyncLoading}
-                        className="neo-btn neo-btn-purple inline-flex h-10 px-4 text-sm disabled:opacity-60"
-                    >
-                        {pensionSyncLoading ? '동기화 중...' : '최신 결과 동기화'}
-                    </button>
-                </div>
+                {pensionSearchError && (
+                    <div className="border-2 border-black bg-rose-100 text-rose-700 text-xs font-bold px-4 py-2 rounded-xl shadow-[2px_2px_0px_0px_#000]">
+                        {pensionSearchError}
+                    </div>
+                )}
 
-                {pensionLoading ? (
-                    <div className="neo-card p-8 text-center text-sm font-bold text-slate-700 bg-white">연금복권 데이터를 불러오는 중입니다...</div>
+                {currentPensionDraw ? (
+                    <PensionResultCard
+                        draw={currentPensionDraw}
+                        // 최신 회차 여부에 따라 최신/지난 배지 레이블 지정
+                        chipLabel={isLatest ? `최신 ${currentPensionDraw.draw_no}회` : `지난 ${currentPensionDraw.draw_no}회`}
+                        variant="latest"
+                        onPrimaryAction={handleSync}
+                        primaryActionLabel={pensionSyncLoading ? '동기화 중...' : '최신 결과 동기화'}
+                        primaryDisabled={pensionSyncLoading}
+                        statusText={`마지막 동기화 ${lastSyncedAt ? formatDateTime(lastSyncedAt) : '아직 실행 전'} · 최신 반영 ${lastSyncedDraw ? `${lastSyncedDraw}회` : '정보 없음'}`}
+                        onPrevDraw={goToPreviousDraw}
+                        onNextDraw={goToNextDraw}
+                        hasPrevDraw={hasPrevDraw}
+                        hasNextDraw={hasNextDraw}
+                        isLoading={resultsLoading}
+                    />
+                ) : resultsLoading ? (
+                    <div className="neo-card p-8 text-center text-sm font-bold text-slate-700 bg-white">데이터를 불러오는 중입니다...</div>
                 ) : pensionError ? (
                     <div className="neo-card p-8 text-center text-sm font-black text-rose-700 bg-red-50 border-rose-600">{pensionError}</div>
-                ) : latestPensionDraw ? (
-                    <PensionResultCard draw={latestPensionDraw} />
                 ) : (
-                    <div className="neo-card p-8 text-center text-sm font-bold text-slate-700 bg-white">연금복권 데이터가 아직 없습니다. 먼저 `/api/pension/sync`를 실행해 주세요.</div>
+                    <div className="neo-card p-8 text-center text-sm font-bold text-slate-700 bg-white">데이터가 없습니다. 먼저 로컬 서버 동기화를 수행해 주세요.</div>
                 )}
             </section>
 
@@ -146,43 +179,7 @@ export function PensionPage({
                 </SectionCard>
             </section>
 
-            {/* 회차 검색 영역 */}
-            {/* 지난 회차 검색 섹션 */}
-            <section>
-                <SectionCard title="지난 회차 검색" eyebrow="연금복권 조회" icon={<Search className="h-5 w-5" />}>
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                        <input
-                            type="number"
-                            min={1}
-                            value={pensionSearchInput}
-                            onChange={e => {
-                                setPensionSearchInput(e.target.value);
-                                setPensionSearchResult(null);
-                                setPensionSearchError('');
-                            }}
-                            onKeyDown={e => e.key === 'Enter' && searchPensionDraw()}
-                            placeholder="예: 306"
-                            className="neo-input h-12 flex-1 px-4 text-sm text-black"
-                        />
-                        <button
-                            onClick={searchPensionDraw}
-                            className="neo-btn neo-btn-purple inline-flex h-12 px-5 text-sm sm:min-w-[120px]"
-                        >
-                            회차 조회
-                        </button>
-                    </div>
 
-                    <div className="mt-4 rounded-xl border-2 border-black bg-white/50 p-4 shadow-[2px_2px_0px_0px_#000]">
-                        {pensionSearchError ? (
-                            <p className="text-sm font-black text-rose-600">{pensionSearchError}</p>
-                        ) : pensionSearchResult ? (
-                            <PensionResultCard draw={pensionSearchResult} />
-                        ) : (
-                            <p className="text-sm font-bold text-slate-700">조회할 연금복권 회차를 입력하면 지난 회차 추첨 결과를 확인할 수 있습니다.</p>
-                        )}
-                    </div>
-                </SectionCard>
-            </section>
 
             {/* 백테스트 알고리즘 성향 진단 영역 */}
             {/* 백테스트 성향 진단 섹션 */}

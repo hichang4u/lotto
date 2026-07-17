@@ -52,9 +52,15 @@ export function RulePerformanceCard({ item }: { item: LottoRulePerformance }) {
                     <div className="text-base font-black text-black">{item.label}</div>
                     <div className="mt-1 text-xs font-bold text-slate-500">생성 {item.generatedCount}회</div>
                 </div>
-                <span className="neo-badge neo-badge-purple text-xs">
-                    평균 일치 {item.averageMatches.toFixed(3)}
-                </span>
+                <div className="flex flex-col items-end gap-1.5">
+                    <span className="neo-badge neo-badge-purple text-xs">
+                        평균 일치 {item.averageMatches.toFixed(3)}
+                    </span>
+                    {/* actualRate가 백엔드/캐시 상황에 따라 undefined일 수 있으므로 0으로 가드 */}
+                    <span className="neo-badge neo-badge-blue text-[10px] py-0.5 px-2">
+                        실측 확률 {(item.actualRate ?? 0).toFixed(1)}%
+                    </span>
+                </div>
             </div>
 
             {/* 규칙 성과 디테일 그리드 (내부 블랙 보더 제거 및 심플 레이아웃화) */}

@@ -1,5 +1,4 @@
 import { getLottoResultByDrawNoQuery, getRecentLottoResultsQuery } from '../queries/lotto'
-import type { LottoHistoryQueryRow } from '../types/lotto'
 
 export async function getLottoResultByDrawNo(db: D1Database, drwNo: number) {
   return getLottoResultByDrawNoQuery(db, drwNo)

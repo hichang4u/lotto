@@ -1,8 +1,8 @@
-import { Info, Search, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Info, Search, Sparkles } from 'lucide-react';
 import { useLottoPage } from '../../hooks/useLottoPage';
 import { formatDateTime } from '../../utils/format';
 import { SectionCard } from '../ui/SectionCard';
-import { Ball, BonusBadge } from '../ui/Ball';
+import { Ball } from '../ui/Ball';
 import { DrawResultCard } from './DrawResultCard';
 import { RecommendationCard } from './RecommendationCard';
 import { RuleWeightCard, RulePerformanceCard } from './RuleCards';
@@ -15,32 +15,29 @@ export function LottoPage({
     onSyncError: (err: string) => void;
 }) {
     const {
-        latestDraw,
+        currentDraw,
+        isLatest,
+        hasPrevDraw,
+        hasNextDraw,
         sets,
         ruleWeights,
         backtestDiagnostics,
         backtestLoading,
         loading,
-        results,
         resultsLoading,
         syncLoading,
         lastSyncedAt,
         lastSyncedDraw,
         searchInput,
-        searchResult,
         searchError,
-        page,
-        totalPages,
-        pagedResults,
         setSearchInput,
-        setSearchResult,
         setSearchError,
-        setPage,
         syncLatestResults,
         generateNumbers,
         loadBacktestDiagnostics,
         searchDraw,
-        scrollToLookupSection,
+        goToPreviousDraw,
+        goToNextDraw,
     } = useLottoPage();
 
     const handleSync = () => syncLatestResults(onSyncMessage, onSyncError);
@@ -49,21 +46,60 @@ export function LottoPage({
         /* space-y-10 sm:space-y-12를 통해 전체 섹션 간의 여백을 넉넉하게 확보 */
         <div className="space-y-10 sm:space-y-12">
             {/* 최신 결과 카드 섹션 */}
-            <section>
-                {resultsLoading ? (
-                    <div className="neo-card p-8 text-center text-sm font-bold text-slate-700 bg-white">데이터를 불러오는 중입니다...</div>
-                ) : latestDraw ? (
+            <section className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-700">로또 6/45</p>
+                        <h2 className="mt-1 text-2xl font-black tracking-tighter text-black sm:text-3xl">회차별 당첨결과</h2>
+                    </div>
+                    {/* 미니 검색 폼 */}
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            min={1}
+                            value={searchInput}
+                            onChange={e => {
+                                setSearchInput(e.target.value);
+                                setSearchError('');
+                            }}
+                            onKeyDown={e => e.key === 'Enter' && searchDraw()}
+                            placeholder="회차 검색 (예: 1158)"
+                            className="neo-input h-10 w-44 px-3 text-xs text-black"
+                        />
+                        <button
+                            onClick={searchDraw}
+                            className="neo-btn neo-btn-primary inline-flex h-10 px-3 text-xs"
+                        >
+                            <Search className="h-3.5 w-3.5 mr-1" />
+                            조회
+                        </button>
+                    </div>
+                </div>
+
+                {searchError && (
+                    <div className="border-2 border-black bg-rose-100 text-rose-700 text-xs font-bold px-4 py-2 rounded-xl shadow-[2px_2px_0px_0px_#000]">
+                        {searchError}
+                    </div>
+                )}
+
+                {currentDraw ? (
                     <DrawResultCard
-                        draw={latestDraw}
-                        chipLabel={`최신 ${latestDraw.drwNo}회`}
+                        draw={currentDraw}
+                        // 최신 회차 여부에 따라 최신/지난 배지 레이블 지정
+                        chipLabel={isLatest ? `최신 ${currentDraw.drwNo}회` : `지난 ${currentDraw.drwNo}회`}
                         variant="latest"
                         onPrimaryAction={handleSync}
-                        onSecondaryAction={scrollToLookupSection}
                         primaryActionLabel={syncLoading ? '동기화 중...' : '최신 결과 동기화'}
-                        secondaryActionLabel="회차 상세 보기"
                         primaryDisabled={syncLoading}
                         statusText={`마지막 동기화 ${lastSyncedAt ? formatDateTime(lastSyncedAt) : '아직 실행 전'} · 최신 반영 ${lastSyncedDraw ? `${lastSyncedDraw}회` : '정보 없음'}`}
+                        onPrevDraw={goToPreviousDraw}
+                        onNextDraw={goToNextDraw}
+                        hasPrevDraw={hasPrevDraw}
+                        hasNextDraw={hasNextDraw}
+                        isLoading={resultsLoading}
                     />
+                ) : resultsLoading ? (
+                    <div className="neo-card p-8 text-center text-sm font-bold text-slate-700 bg-white">데이터를 불러오는 중입니다...</div>
                 ) : (
                     <div className="neo-card p-8 text-center text-sm font-bold text-slate-700 bg-white">데이터가 없습니다. 먼저 로컬 서버 동기화를 수행해 주세요.</div>
                 )}
@@ -208,101 +244,7 @@ export function LottoPage({
                 </SectionCard>
             </section>
 
-            {/* 회차 탐색 및 히스토리 (2열 그리드) */}
-            <section id="lookup-section" className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-                <SectionCard title="회차 탐색" eyebrow="회차 조회" icon={<Search className="h-5 w-5" />}>
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                        <input
-                            type="number"
-                            min={1}
-                            value={searchInput}
-                            onChange={e => {
-                                setSearchInput(e.target.value);
-                                setSearchResult(null);
-                                setSearchError('');
-                            }}
-                            onKeyDown={e => e.key === 'Enter' && searchDraw()}
-                            placeholder="예: 1158"
-                            className="neo-input h-12 flex-1 px-4 text-sm text-black"
-                        />
-                        <button
-                            onClick={searchDraw}
-                            className="neo-btn neo-btn-primary inline-flex h-12 px-5 text-sm sm:min-w-[120px]"
-                        >
-                            회차 조회
-                        </button>
-                    </div>
 
-                    <div className="mt-4 rounded-xl border-2 border-black bg-white/50 p-4 shadow-[2px_2px_0px_0px_#000]">
-                        {searchError ? (
-                            <p className="text-sm font-black text-rose-600">{searchError}</p>
-                        ) : searchResult ? (
-                            <DrawResultCard draw={searchResult} chipLabel="조회 결과" />
-                        ) : (
-                            <p className="text-sm font-bold text-slate-700">회차 번호를 입력하면 당첨 번호와 1등 당첨금을 바로 확인할 수 있습니다.</p>
-                        )}
-                    </div>
-                </SectionCard>
-
-                <SectionCard title="최근 회차 히스토리" eyebrow="최근 회차" icon={<ChevronRight className="h-5 w-5" />}>
-                    {results.length > 1 ? (
-                        <>
-                            <div className="space-y-3">
-                                {pagedResults.map(draw => (
-                                    <div key={draw.drwNo} className="border-2 border-black bg-white rounded-xl px-4 py-3.5 shadow-[2px_2px_0px_0px_#000000]">
-                                        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[88px_1fr_96px] lg:items-center">
-                                            <div>
-                                                <div className="text-sm font-black text-black">{draw.drwNo}회</div>
-                                                <div className="mt-1 text-xs font-bold text-slate-700">{draw.drwNoDate}</div>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                {[draw.drwtNo1, draw.drwtNo2, draw.drwtNo3, draw.drwtNo4, draw.drwtNo5, draw.drwtNo6].map((num, i) => (
-                                                    <Ball key={i} num={num} size="sm" delay={i * 15} />
-                                                ))}
-                                                <span className="mx-1 text-sm font-black text-black">+</span>
-                                                <div className="relative">
-                                                    <Ball num={draw.bnusNo} size="sm" />
-                                                    <BonusBadge compact />
-                                                </div>
-                                            </div>
-                                            <div className="text-left lg:text-right">
-                                                <span className="neo-badge neo-badge-green text-xs">
-                                                    {draw.firstWinamnt ? `${(draw.firstWinamnt / 100000000).toFixed(1).replace(/\.0$/, '')}억 원` : '-'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* 최근 히스토리 페이지네이션 */}
-                            {totalPages > 1 && (
-                                <div className="mt-4 flex items-center justify-between rounded-xl border-2 border-black bg-white px-4 py-2.5 shadow-[2px_2px_0px_0px_#000000]">
-                                    <button
-                                        onClick={() => setPage(p => Math.max(0, p - 1))}
-                                        disabled={page === 0}
-                                        className="result-arrow-shell"
-                                        style={{ width: 34, height: 34 }}
-                                    >
-                                        <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
-                                    </button>
-                                    <span className="text-sm font-black text-black">{page + 1} / {totalPages}</span>
-                                    <button
-                                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                                        disabled={page >= totalPages - 1}
-                                        className="result-arrow-shell"
-                                        style={{ width: 34, height: 34 }}
-                                    >
-                                        <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <p className="text-sm font-bold text-slate-700">표시할 과거 회차가 아직 없습니다.</p>
-                    )}
-                </SectionCard>
-            </section>
 
             {/* 하단 번호대 색상 안내 및 서비스 유의사항 (풋터 스타일 경량화) */}
             <footer className="border-t-3 border-black pt-8 space-y-6">
