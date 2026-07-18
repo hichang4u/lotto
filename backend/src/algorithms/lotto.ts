@@ -8,6 +8,8 @@ type SetConfig = {
   check: (numbers: number[]) => boolean
 }
 
+type Rng = () => number
+
 export type RuleWeightDiagnostic = {
   ruleId: string
   label: string
@@ -83,9 +85,21 @@ const COLD_DRAW_COUNT = 15
 const AGE_BONUS_WINDOW = 10
 const MAX_PICK_ATTEMPTS = 300
 
-function buildFallbackSet(label: string, ruleId?: string, ruleWeight?: number): GeneratedSet {
+function buildFallbackSet(label: string, rng: Rng, usedNumbers: Set<number>, ruleId?: string, ruleWeight?: number): GeneratedSet {
+  // 최종 폴백에서도 미사용 번호를 우선 사용해 세트 간 비중첩을 유지
+  const unused: number[] = []
+  for (let num = 1; num <= 45; num++) {
+    if (!usedNumbers.has(num)) unused.push(num)
+  }
+
   const picked = new Set<number>()
-  while (picked.size < 6) picked.add(Math.floor(Math.random() * 45) + 1)
+  while (picked.size < 6 && unused.length > 0) {
+    const index = Math.floor(rng() * unused.length)
+    picked.add(unused[index])
+    unused.splice(index, 1)
+  }
+  while (picked.size < 6) picked.add(Math.floor(rng() * 45) + 1)
+
   const numbers = Array.from(picked).sort((a, b) => a - b)
   return {
     label,
@@ -243,9 +257,9 @@ function buildWeights(draws: DrawNumbersRow[]) {
   })
 }
 
-function weightedPick(pool: { num: number; weight: number }[]) {
+function weightedPick(pool: { num: number; weight: number }[], rng: Rng) {
   const total = pool.reduce((sum, entry) => sum + entry.weight, 0)
-  let random = Math.random() * total
+  let random = rng() * total
   for (const entry of pool) {
     random -= entry.weight
     if (random <= 0) return entry.num
@@ -253,26 +267,46 @@ function weightedPick(pool: { num: number; weight: number }[]) {
   return pool[pool.length - 1].num
 }
 
-function pickWeightedNumbers(weights: { num: number; weight: number }[]) {
+function pickWeightedNumbers(weights: { num: number; weight: number }[], rng: Rng) {
   const picked = new Set<number>()
-  while (picked.size < 6) picked.add(weightedPick(weights.filter(entry => !picked.has(entry.num))))
+  while (picked.size < 6) picked.add(weightedPick(weights.filter(entry => !picked.has(entry.num)), rng))
   return Array.from(picked).sort((a, b) => a - b)
 }
 
-function pickSet(config: SetConfig, weights: { num: number; weight: number }[], ruleWeight: number): GeneratedSet {
-  for (let attempt = 0; attempt < MAX_PICK_ATTEMPTS; attempt++) {
-    const numbers = pickWeightedNumbers(weights)
-    if (passesCommonRules(numbers) && config.check(numbers)) {
-      return {
-        label: config.label,
-        numbers,
-        meta: buildSetMeta(numbers, ['common-rules', config.label], config.id, ruleWeight),
+function countOverlap(numbers: number[], usedNumbers: Set<number>) {
+  let overlap = 0
+  for (const num of numbers) {
+    if (usedNumbers.has(num)) overlap += 1
+  }
+  return overlap
+}
+
+function pickSet(
+  config: SetConfig,
+  weights: { num: number; weight: number }[],
+  ruleWeight: number,
+  rng: Rng,
+  usedNumbers: Set<number>,
+): GeneratedSet {
+  // 완화 사다리: 기존 세트와의 중복 허용치를 0 → 1 → 2로 단계적 완화
+  for (const maxOverlap of [0, 1, 2]) {
+    for (let attempt = 0; attempt < MAX_PICK_ATTEMPTS; attempt++) {
+      const numbers = pickWeightedNumbers(weights, rng)
+      if (countOverlap(numbers, usedNumbers) > maxOverlap) continue
+      if (passesCommonRules(numbers) && config.check(numbers)) {
+        return {
+          label: config.label,
+          numbers,
+          meta: buildSetMeta(numbers, ['common-rules', config.label], config.id, ruleWeight),
+        }
       }
     }
   }
 
+  // 성향 완화 단계: 공통 규칙 + 중복 ≤2만 유지
   for (let attempt = 0; attempt < MAX_PICK_ATTEMPTS; attempt++) {
-    const numbers = pickWeightedNumbers(weights)
+    const numbers = pickWeightedNumbers(weights, rng)
+    if (countOverlap(numbers, usedNumbers) > 2) continue
     if (passesCommonRules(numbers)) {
       return {
         label: config.label,
@@ -282,22 +316,27 @@ function pickSet(config: SetConfig, weights: { num: number; weight: number }[], 
     }
   }
 
-  return buildFallbackSet(config.label, config.id, ruleWeight)
+  return buildFallbackSet(config.label, rng, usedNumbers, config.id, ruleWeight)
 }
 
-export function buildGeneratedSets(draws: DrawNumbersRow[]): GeneratedSet[] {
-  if (draws.length === 0) {
-    return SET_CONFIGS.map(({ label, id, baseWeight }) => buildFallbackSet(label, id, baseWeight))
-  }
-
-  const weights = buildWeights(draws)
+export function buildGeneratedSets(draws: DrawNumbersRow[], rng: Rng = Math.random): GeneratedSet[] {
   const ruleWeights = buildRuleWeights(draws)
-  const weightMap = new Map(ruleWeights.map((entry) => [entry.ruleId, entry.weight]))
+  const configById = new Map(SET_CONFIGS.map((config) => [config.id, config]))
+  const usedNumbers = new Set<number>()
+  const numberWeights = draws.length > 0 ? buildWeights(draws) : null
 
-  return SET_CONFIGS
-    .slice()
-    .sort((a, b) => (weightMap.get(b.id) ?? b.baseWeight) - (weightMap.get(a.id) ?? a.baseWeight))
-    .map((config) => pickSet(config, weights, weightMap.get(config.id) ?? config.baseWeight))
+  // 진단에 표시되는 우선순위(동점 시 한글 라벨 순 포함)와 동일한 순서로 생성 → 첫 세트가 대표 추천
+  return ruleWeights
+    .map((entry) => {
+      const config = configById.get(entry.ruleId)
+      if (!config) return null
+      const set = numberWeights
+        ? pickSet(config, numberWeights, entry.weight, rng, usedNumbers)
+        : buildFallbackSet(config.label, rng, usedNumbers, config.id, entry.weight)
+      set.numbers.forEach((num) => usedNumbers.add(num))
+      return set
+    })
+    .filter((set): set is GeneratedSet => set !== null)
 }
 
 export function countMatches(picked: number[], draw: DrawNumbersRow) {
