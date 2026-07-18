@@ -1,9 +1,9 @@
 import {
   buildPensionRecommendations,
   buildPensionRuleWeights,
-  createSeededRng,
   PENSION_ALGORITHM_VERSION,
 } from '../algorithms/pension'
+import { createSeededRng } from '../algorithms/statistics'
 import { getAllPensionBacktestRowsQuery } from '../queries/pension/results'
 import type { PensionBacktestRow } from '../types/pension/models'
 import type { PensionBacktestSummary } from '../types/pension/summaries'

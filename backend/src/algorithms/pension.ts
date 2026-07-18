@@ -1,4 +1,5 @@
 import type { PensionRecommendationSet } from '../types/pension'
+import { clamp, shrinkRate } from './statistics'
 
 type PensionSetConfig = {
   id: string
@@ -77,18 +78,6 @@ const PENSION_SET_CONFIGS: PensionSetConfig[] = [
   },
 ]
 
-// mulberry32 — 백테스트 재현성을 위한 시드 기반 RNG
-export function createSeededRng(seed: number): Rng {
-  let state = seed >>> 0
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0
-    let t = state
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
 function getDigitSum(digits: number[]) {
   return digits.reduce((sum, digit) => sum + digit, 0)
 }
@@ -114,10 +103,6 @@ function getMaxDuplicateCount(digits: number[]) {
   const counts = new Map<number, number>()
   for (const digit of digits) counts.set(digit, (counts.get(digit) ?? 0) + 1)
   return Math.max(...counts.values(), 1)
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
 }
 
 function passesCommonPensionRules(digits: number[]) {
@@ -173,8 +158,8 @@ export function buildPensionRuleWeights(historyNumbers: string[]): PensionRuleWe
     })
 
     // 이론 확률을 prior로 두는 베이지안 수축 — 표본이 적을수록 이론값에 가깝게
-    const passRate = (decayedPass + PENSION_PRIOR_STRENGTH * prior.passRate) / (decayedTotal + PENSION_PRIOR_STRENGTH)
-    const matchRate = (decayedMatch + PENSION_PRIOR_STRENGTH * prior.matchRate) / (decayedTotal + PENSION_PRIOR_STRENGTH)
+    const passRate = shrinkRate(decayedPass, decayedTotal, prior.passRate, PENSION_PRIOR_STRENGTH)
+    const matchRate = shrinkRate(decayedMatch, decayedTotal, prior.matchRate, PENSION_PRIOR_STRENGTH)
 
     // 이론 대비 상대 강도(lift): 이력이 이론과 같으면 1 → score 0.5 → 전 성향 동일 가중치
     const liftPass = passRate / prior.passRate
