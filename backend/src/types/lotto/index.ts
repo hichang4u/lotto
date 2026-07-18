@@ -11,3 +11,13 @@ export type {
   LottoHotNumber,
   LottoSyncSummary,
 } from './summaries'
+export type {
+  InsertPurchaseParams,
+  PurchaseGameInput,
+  PurchaseGameResult,
+  PurchaseJoinedRow,
+  PurchaseListSummary,
+  PurchaseTicket,
+  SavePurchaseInput,
+  SavePurchaseSummary,
+} from './purchases'

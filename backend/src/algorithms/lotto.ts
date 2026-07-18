@@ -353,3 +353,13 @@ export function countMatches(picked: number[], draw: DrawNumbersRow) {
   }
   return matches
 }
+
+// 일치 수 + 보너스 → 등수 (해당 없으면 null). 백테스트와 구매 판정의 단일 소스.
+export function getPrizeTier(matches: number, hasBonus: boolean): number | null {
+  if (matches === 6) return 1
+  if (matches === 5 && hasBonus) return 2
+  if (matches === 5) return 3
+  if (matches === 4) return 4
+  if (matches === 3) return 5
+  return null
+}

@@ -1,4 +1,4 @@
-import { buildGeneratedSets, buildRuleWeights, countMatches, LOTTO_ALGORITHM_VERSION, SET_CONFIGS } from '../algorithms/lotto'
+import { buildGeneratedSets, buildRuleWeights, countMatches, getPrizeTier, LOTTO_ALGORITHM_VERSION, SET_CONFIGS } from '../algorithms/lotto'
 import { createSeededRng } from '../algorithms/statistics'
 import { getAllLottoBacktestRowsQuery } from '../queries/lotto'
 import type { DrawNumbersRow, LottoBacktestSummary } from '../types/lotto'
@@ -7,16 +7,6 @@ const MIN_BACKTEST_DRAWS = 40
 const MIN_TRAINING_DRAWS = 30
 
 const DRAW_NUM_COLS = ['drwtNo1', 'drwtNo2', 'drwtNo3', 'drwtNo4', 'drwtNo5', 'drwtNo6'] as const
-
-// 일치 수 + 보너스 → 등수 (해당 없으면 null)
-function getPrizeTier(matches: number, hasBonus: boolean): number | null {
-  if (matches === 6) return 1
-  if (matches === 5 && hasBonus) return 2
-  if (matches === 5) return 3
-  if (matches === 4) return 4
-  if (matches === 3) return 5
-  return null
-}
 
 function emptyPrizeCounts(): Record<number, number> {
   return { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
