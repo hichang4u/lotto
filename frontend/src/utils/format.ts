@@ -1,11 +1,12 @@
 import type { BallTheme } from '../types';
 
+// 동행복권 공식 메인 카드의 단색 볼 팔레트 (구간별 채움색 + 흰 숫자)
 export function getBallTheme(num: number): BallTheme {
-    if (num <= 10) return { base: '#fdd835', mid: '#f6c21a', dark: '#d59b00', text: '#5b4300' };
-    if (num <= 20) return { base: '#6ec6ff', mid: '#3aa0eb', dark: '#1976d2', text: '#ffffff' };
-    if (num <= 30) return { base: '#ff7b6e', mid: '#f25545', dark: '#d83929', text: '#ffffff' };
-    if (num <= 40) return { base: '#cfd8dc', mid: '#a7b2b9', dark: '#7b8790', text: '#ffffff' };
-    return { base: '#8bd76d', mid: '#58b947', dark: '#2e8b2e', text: '#ffffff' };
+    if (num <= 10) return { base: '#f2a413', mid: '#d98d0b', dark: '#b57306', text: '#ffffff' };
+    if (num <= 20) return { base: '#2e6be6', mid: '#2456c2', dark: '#1b429c', text: '#ffffff' };
+    if (num <= 30) return { base: '#d6455d', mid: '#b8354c', dark: '#96283c', text: '#ffffff' };
+    if (num <= 40) return { base: '#6e7683', mid: '#59606c', dark: '#454b55', text: '#ffffff' };
+    return { base: '#3fa55b', mid: '#328a4a', dark: '#266e3a', text: '#ffffff' };
 }
 
 export function formatMoneyKRW(amount: number) {

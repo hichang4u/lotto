@@ -45,8 +45,11 @@ export function PensionResultCard({
                 )}
 
                 <div className="text-center">
-                    <div className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#8b5cf6] sm:text-sm">PENSION 720+</div>
-                    <h3 className="mt-1 text-xl font-black text-black sm:text-2xl">연금복권720+</h3>
+                    <img
+                        src="/images/img-mainWf720.svg"
+                        alt="연금복권 720+"
+                        className="lotto-mark-image mx-auto"
+                    />
                 </div>
 
                 {/* 중앙 회차 헤딩 및 좌우 화살표 */}

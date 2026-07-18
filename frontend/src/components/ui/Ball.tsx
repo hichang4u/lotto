@@ -3,12 +3,13 @@ import { getBallTheme } from '../../utils/format';
 export function Ball({ num, size = 'md', delay = 0 }: { num: number; size?: 'sm' | 'md' | 'responsive'; delay?: number }) {
     const t = getBallTheme(num);
     const dimensions = size === 'sm'
-        ? { width: 38, height: 38, fontSize: 13, shadow: '3px 3px 0px 0px #000' }
+        ? { width: 38, height: 38, fontSize: 14 }
         : size === 'responsive'
-            ? { width: 'clamp(38px, 8.4vw, 54px)', height: 'clamp(38px, 8.4vw, 54px)', fontSize: 'clamp(13px, 3.7vw, 17px)', shadow: '4px 4px 0px 0px #000' }
-            : { width: 54, height: 54, fontSize: 17, shadow: '4px 4px 0px 0px #000' };
+            ? { width: 'clamp(38px, 8.4vw, 54px)', height: 'clamp(38px, 8.4vw, 54px)', fontSize: 'clamp(14px, 3.7vw, 19px)' }
+            : { width: 54, height: 54, fontSize: 19 };
 
     return (
+        /* 동행복권 공식 스타일: 단색 채움 + 흰 숫자, 테두리·하드 섀도우 없음 */
         <div
             className="ball-pop"
             style={{
@@ -19,13 +20,11 @@ export function Ball({ num, size = 'md', delay = 0 }: { num: number; size?: 'sm'
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 900,
+                fontWeight: 800,
                 fontSize: dimensions.fontSize,
-                color: '#000000',
+                color: t.text,
                 flexShrink: 0,
-                border: '3px solid #000000',
                 background: t.base,
-                boxShadow: dimensions.shadow,
             }}
         >
             {num}

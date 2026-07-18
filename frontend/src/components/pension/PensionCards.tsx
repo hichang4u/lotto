@@ -2,7 +2,8 @@ import type { PensionRecommendationSet, PensionRulePerformance } from '../../typ
 import { PENSION_RULE_LABELS } from '../../constants';
 import { PensionDigitBall } from './PensionNumberDisplay';
 
-const RECOMMENDATION_COLORS = ['#ea580c', '#fb8c00', '#fbbc04', '#2d9cdb', '#a06cd5', '#b0b7c3'];
+// 당첨결과 카드와 동일한 공식 자리별 링 색상 (1~6자리)
+const RECOMMENDATION_COLORS = ['#e2502b', '#f07e26', '#f2c024', '#3379e3', '#9a6bd0', '#9aa3ad'];
 
 export function PensionRecommendationCard({ set }: { set: PensionRecommendationSet }) {
     const ruleName = set.meta.ruleId ? (PENSION_RULE_LABELS[set.meta.ruleId] ?? set.meta.ruleId) : null;

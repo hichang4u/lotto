@@ -5,16 +5,13 @@ export function PensionDigitBall({ value, color, size = 'md' }: { value: string;
         : 'h-[clamp(30px,7.6vw,60px)] w-[clamp(30px,7.6vw,60px)] text-[clamp(14px,3.4vw,28px)]';
 
     return (
+        /* 동행복권 공식 스타일: 흰 바탕 + 자리별 색상 링 + 진네이비 숫자 */
         <div
             className={`flex shrink-0 items-center justify-center rounded-full font-black ${sizeClass}`}
             style={{
-                border: '3px solid #000000',
+                border: `${size === 'sm' ? 3 : 4}px solid ${color}`,
                 background: '#ffffff',
-                color: '#000000',
-                boxShadow: size === 'sm' ? '3px 3px 0px 0px #000000' : '4px 4px 0px 0px #000000',
-                // 안쪽으로 자릿수 구분을 위한 네오 아웃라인 포인트 처리
-                outline: `3px solid ${color}`,
-                outlineOffset: '-3px',
+                color: '#1e293b',
             }}
         >
             {value}
@@ -22,7 +19,8 @@ export function PensionDigitBall({ value, color, size = 'md' }: { value: string;
     );
 }
 
-const DIGIT_COLORS = ['#cbd5e1', '#f97316', '#f59e0b', '#eab308', '#3b82f6', '#8b5cf6', '#94a3b8'];
+// 공식 메인 카드의 자리별 링 색상 (조, 1~6자리 순)
+const DIGIT_COLORS = ['#c6cdd6', '#e2502b', '#f07e26', '#f2c024', '#3379e3', '#9a6bd0', '#9aa3ad'];
 
 export function PensionNumberRow({
     label,
