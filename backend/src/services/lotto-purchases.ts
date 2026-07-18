@@ -21,6 +21,11 @@ const ERROR_DEVICE_REQUIRED = 'deviceId가 필요합니다.'
 const ERROR_GAME_COUNT = `게임은 정확히 ${GAMES_PER_TICKET}개여야 합니다.`
 const ERROR_INVALID_NUMBERS = '각 게임은 1~45 범위의 중복 없는 숫자 6개여야 합니다.'
 const ERROR_EMPTY_HISTORY = '먼저 당첨번호를 동기화해주세요.'
+const ERROR_FIELD_TOO_LONG = '요청 필드 길이가 허용 범위를 초과했습니다.'
+
+const DEVICE_ID_MAX_LENGTH = 64
+const ALGORITHM_MAX_LENGTH = 100
+const GAME_FIELD_MAX_LENGTH = 100
 
 // 라우트에서 400 응답 판별용
 export const PURCHASE_VALIDATION_ERRORS = [
@@ -28,7 +33,13 @@ export const PURCHASE_VALIDATION_ERRORS = [
   ERROR_GAME_COUNT,
   ERROR_INVALID_NUMBERS,
   ERROR_EMPTY_HISTORY,
+  ERROR_FIELD_TOO_LONG,
 ]
+
+function assertValidOptionalString(value: unknown, maxLength: number) {
+  if (value === undefined || value === null) return
+  if (typeof value !== 'string' || value.length > maxLength) throw new Error(ERROR_FIELD_TOO_LONG)
+}
 
 function assertValidGames(games: PurchaseGameInput[]) {
   if (!Array.isArray(games) || games.length !== GAMES_PER_TICKET) {
@@ -42,11 +53,15 @@ function assertValidGames(games: PurchaseGameInput[]) {
     for (const num of numbers) {
       if (!Number.isInteger(num) || num < 1 || num > 45) throw new Error(ERROR_INVALID_NUMBERS)
     }
+    assertValidOptionalString(game.ruleId, GAME_FIELD_MAX_LENGTH)
+    assertValidOptionalString(game.label, GAME_FIELD_MAX_LENGTH)
   }
 }
 
 export async function savePurchaseTicket(db: D1Database, input: SavePurchaseInput): Promise<SavePurchaseSummary> {
   if (!input.deviceId || typeof input.deviceId !== 'string') throw new Error(ERROR_DEVICE_REQUIRED)
+  if (input.deviceId.length > DEVICE_ID_MAX_LENGTH) throw new Error(ERROR_FIELD_TOO_LONG)
+  assertValidOptionalString(input.algorithm, ALGORITHM_MAX_LENGTH)
   assertValidGames(input.games)
 
   const latestDrawNo = await getLatestStoredLottoDrawNo(db)

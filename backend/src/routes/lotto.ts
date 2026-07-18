@@ -54,7 +54,12 @@ export function createLottoRoutes() {
     }))
 
   app.post('/purchases', withRouteErrorHandling(async (c) => {
-      const body = await c.req.json()
+      let body
+      try {
+        body = await c.req.json()
+      } catch {
+        return c.json({ error: '요청 본문이 올바르지 않습니다.' }, 400)
+      }
       const result = await savePurchaseTicket(c.env.DB, body)
       return c.json({ success: true, ...result })
     }, {
