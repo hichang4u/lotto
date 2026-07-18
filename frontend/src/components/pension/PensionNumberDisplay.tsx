@@ -1,15 +1,20 @@
-export function PensionDigitBall({ value, color }: { value: string; color: string }) {
+export function PensionDigitBall({ value, color, size = 'md' }: { value: string; color: string; size?: 'md' | 'sm' }) {
+    // 2열 그리드 안의 추천 카드처럼 좁은 컨텍스트에서는 sm 사이즈로 한 줄 유지
+    const sizeClass = size === 'sm'
+        ? 'h-[clamp(28px,6.4vw,44px)] w-[clamp(28px,6.4vw,44px)] text-[clamp(13px,3vw,20px)]'
+        : 'h-[clamp(30px,7.6vw,60px)] w-[clamp(30px,7.6vw,60px)] text-[clamp(14px,3.4vw,28px)]';
+
     return (
         <div
-            className="flex h-[clamp(50px,8.6vw,76px)] w-[clamp(50px,8.6vw,76px)] items-center justify-center rounded-full text-[clamp(24px,4vw,38px)] font-black"
+            className={`flex shrink-0 items-center justify-center rounded-full font-black ${sizeClass}`}
             style={{
                 border: '3px solid #000000',
                 background: '#ffffff',
                 color: '#000000',
-                boxShadow: '4px 4px 0px 0px #000000',
+                boxShadow: size === 'sm' ? '3px 3px 0px 0px #000000' : '4px 4px 0px 0px #000000',
                 // 안쪽으로 자릿수 구분을 위한 네오 아웃라인 포인트 처리
-                outline: `4px solid ${color}`,
-                outlineOffset: '-4px',
+                outline: `3px solid ${color}`,
+                outlineOffset: '-3px',
             }}
         >
             {value}
@@ -38,22 +43,22 @@ export function PensionNumberRow({
 
     return (
         /* 경계 구분선을 굵은 블랙 실선으로 처리 */
-        <div className="grid gap-5 border-t-3 border-black py-6 lg:grid-cols-[1.05fr_1.55fr] lg:items-center lg:gap-12">
-            <div className="text-center lg:text-left">
-                <div className="text-[24px] font-black tracking-tighter text-black sm:text-[32px] lg:text-[36px]">
+        <div className="border-t-3 border-black py-6">
+            <div className="text-center">
+                <div className="text-lg font-black tracking-tighter text-black sm:text-2xl">
                     {label} <span className="mx-1.5 text-black">|</span> <span className="text-slate-700">{subtitle}</span>
                 </div>
             </div>
 
-            {/* 조 및 숫자 볼 영역 */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
+            {/* 조 및 숫자 볼 영역 — 로또 볼처럼 한 줄(nowrap) 유지 */}
+            <div className="mt-4 flex items-center justify-center gap-1.5 sm:gap-3">
                 {showBand && band ? (
-                    <div className="text-center">
+                    <div className="shrink-0 text-center">
                         <PensionDigitBall value={band} color={DIGIT_COLORS[0]} />
-                        <div className="mt-2 text-sm font-black text-black">조</div>
+                        <div className="mt-1 text-xs font-black text-black sm:text-sm">조</div>
                     </div>
                 ) : prefixLabel ? (
-                    <div className="px-1 text-base font-black text-black sm:text-lg">{prefixLabel}</div>
+                    <div className="shrink-0 px-1 text-sm font-black text-black sm:text-lg">{prefixLabel}</div>
                 ) : null}
                 {digits.map((digit, index) => (
                     <PensionDigitBall

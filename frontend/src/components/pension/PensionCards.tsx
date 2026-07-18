@@ -38,11 +38,11 @@ export function PensionRecommendationCard({ set }: { set: PensionRecommendationS
 
             <div className="result-divider mt-7" />
 
-            {/* 추천 숫자 목록 */}
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
-                <div className="px-1 text-base font-black text-black sm:text-lg">각조</div>
+            {/* 추천 숫자 목록 — 한 줄(nowrap) 유지 */}
+            <div className="mt-7 flex items-center justify-center gap-1.5 sm:gap-2.5">
+                <div className="shrink-0 px-1 text-sm font-black text-black sm:text-base">각조</div>
                 {set.number.split('').map((digit, index) => (
-                    <PensionDigitBall key={`${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} />
+                    <PensionDigitBall key={`${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} size="sm" />
                 ))}
             </div>
 
@@ -95,12 +95,12 @@ export function FeaturedPensionRecommendationCard({ set }: { set: PensionRecomme
                     </div>
                 </div>
 
-                {/* 내측 숫자 볼 영역 */}
+                {/* 내측 숫자 볼 영역 — 한 줄(nowrap) 유지 */}
                 <div className="border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[2px_2px_0px_0px_#000000]">
-                    <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
-                        <div className="px-1 text-base font-black text-black sm:text-lg">각조</div>
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2.5">
+                        <div className="shrink-0 px-1 text-sm font-black text-black sm:text-base">각조</div>
                         {set.number.split('').map((digit, index) => (
-                            <PensionDigitBall key={`featured-${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} />
+                            <PensionDigitBall key={`featured-${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} size="sm" />
                         ))}
                     </div>
                 </div>
