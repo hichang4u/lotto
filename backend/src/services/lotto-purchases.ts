@@ -55,6 +55,9 @@ function assertValidGames(games: PurchaseGameInput[]) {
     }
     assertValidOptionalString(game.ruleId, GAME_FIELD_MAX_LENGTH)
     assertValidOptionalString(game.label, GAME_FIELD_MAX_LENGTH)
+    if (game.ruleWeight !== undefined && game.ruleWeight !== null && !Number.isFinite(game.ruleWeight)) {
+      throw new Error(ERROR_FIELD_TOO_LONG)
+    }
   }
 }
 
