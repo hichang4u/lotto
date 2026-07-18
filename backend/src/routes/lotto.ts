@@ -1,10 +1,14 @@
 import { Hono } from 'hono'
 import {
+  deletePurchaseTicket,
   generateLottoSetsFromDb,
   getHotNumbersFromDb,
   getLottoResultByDrawNo,
   getRecentLottoResults,
+  listPurchaseTickets,
+  PURCHASE_VALIDATION_ERRORS,
   runLottoBacktestFromDb,
+  savePurchaseTicket,
   syncLatestLottoResults,
 } from '../services/lotto'
 import type { Bindings } from '../types/app'
@@ -47,6 +51,30 @@ export function createLottoRoutes() {
 
   app.post('/generate', withRouteErrorHandling(async (c) => {
       return c.json(await generateLottoSetsFromDb(c.env.DB))
+    }))
+
+  app.post('/purchases', withRouteErrorHandling(async (c) => {
+      const body = await c.req.json()
+      const result = await savePurchaseTicket(c.env.DB, body)
+      return c.json({ success: true, ...result })
+    }, {
+      errorStatus: (_error, message) => PURCHASE_VALIDATION_ERRORS.includes(message) ? 400 : 500,
+    }))
+
+  app.get('/purchases', withRouteErrorHandling(async (c) => {
+      const deviceId = c.req.query('deviceId') ?? ''
+      return c.json(await listPurchaseTickets(c.env.DB, deviceId))
+    }, {
+      errorStatus: (_error, message) => PURCHASE_VALIDATION_ERRORS.includes(message) ? 400 : 500,
+    }))
+
+  app.delete('/purchases/:ticketId', withRouteErrorHandling(async (c) => {
+      const deviceId = c.req.query('deviceId') ?? ''
+      const removed = await deletePurchaseTicket(c.env.DB, c.req.param('ticketId'), deviceId)
+      if (!removed) return notFound(c, '해당 구매 기록이 없습니다.')
+      return c.json({ success: true })
+    }, {
+      errorStatus: (_error, message) => PURCHASE_VALIDATION_ERRORS.includes(message) ? 400 : 500,
     }))
 
   return app
