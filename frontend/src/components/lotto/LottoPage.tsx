@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Info, Search, Sparkles } from 'lucide-react';
 import { useLottoPage } from '../../hooks/useLottoPage';
+import { usePurchases } from '../../hooks/usePurchases';
 import { formatDateTime } from '../../utils/format';
 import { SectionCard } from '../ui/SectionCard';
 import { Ball } from '../ui/Ball';
 import { DrawResultCard } from './DrawResultCard';
 import { RecommendationCard } from './RecommendationCard';
 import { RuleWeightCard, RulePerformanceCard } from './RuleCards';
+import { PurchaseTicketModal } from './PurchaseTicketModal';
 
 // 등수(1~5) → 시뮬레이션 당첨 표기. 높은 등수부터 표시
 function formatLottoPrizeCounts(counts: Record<number, number>) {
@@ -32,6 +35,8 @@ export function LottoPage({
         backtestDiagnostics,
         backtestLoading,
         loading,
+        algorithm,
+        latestDrawNo,
         resultsLoading,
         syncLoading,
         lastSyncedAt,
@@ -48,11 +53,36 @@ export function LottoPage({
         goToNextDraw,
     } = useLottoPage();
 
+    const { savePurchase, saving } = usePurchases();
+    const [showTicketModal, setShowTicketModal] = useState(false);
+    const targetDrawNo = latestDrawNo + 1;
+
+    const handleSavePurchase = async () => {
+        if (!window.confirm(`제 ${targetDrawNo}회 추첨 대상으로 5게임을 저장할까요?`)) return;
+        const result = await savePurchase(algorithm, sets);
+        if (result) {
+            onSyncMessage(`구매번호 저장 완료 (제 ${result.drawNo}회)`);
+            setShowTicketModal(false);
+        } else {
+            onSyncError('구매번호 저장에 실패했습니다.');
+        }
+    };
+
     const handleSync = () => syncLatestResults(onSyncMessage, onSyncError);
 
     return (
         /* space-y-10 sm:space-y-12를 통해 전체 섹션 간의 여백을 넉넉하게 확보 */
         <div className="space-y-10 sm:space-y-12">
+            {showTicketModal && (
+                <PurchaseTicketModal
+                    sets={sets}
+                    targetDrawNo={targetDrawNo}
+                    saving={saving}
+                    onSave={handleSavePurchase}
+                    onClose={() => setShowTicketModal(false)}
+                />
+            )}
+
             {/* 최신 결과 카드 섹션 */}
             <section className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -169,6 +199,19 @@ export function LottoPage({
                             <p className="text-sm font-bold text-slate-700">
                                 {loading ? '추천 로직을 실행하고 있습니다.' : '상단 버튼을 눌러 새로운 추천 번호를 받아보세요.'}
                             </p>
+                        </div>
+                    )}
+
+                    {sets.length > 0 && (
+                        <div className="mt-5 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={() => setShowTicketModal(true)}
+                                disabled={latestDrawNo === 0}
+                                className="neo-btn neo-btn-secondary inline-flex h-11 px-6 text-sm font-black disabled:opacity-60"
+                            >
+                                이 번호로 구매
+                            </button>
                         </div>
                     )}
                 </SectionCard>
