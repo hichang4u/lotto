@@ -51,9 +51,9 @@ export type PensionRulePerformance = {
     ruleId: string;
     label: string;
     generatedCount: number;
-    averageExactMatches: number;
-    exactMatch3PlusRate: number;
-    exactMatch4PlusRate: number;
+    averageSuffixMatches: number;
+    suffix1PlusRate: number;
+    suffix2PlusRate: number;
 };
 
 export type PensionBacktestDiagnostics = {
@@ -61,8 +61,16 @@ export type PensionBacktestDiagnostics = {
     evaluatedDraws: number;
     setsPerDraw: number;
     totalGeneratedSets: number;
-    averageExactMatchPerSet: number;
-    averageBestExactMatchPerDraw: number;
+    averageSuffixMatchPerSet: number;
+    averageBestSuffixMatchPerDraw: number;
+    atLeastOnePrizeRate: number;
+    prizeCounts: Record<number, number>;
+    baseline: {
+        totalSets: number;
+        averageSuffixMatchPerSet: number;
+        atLeastOnePrizeRate: number;
+        prizeCounts: Record<number, number>;
+    };
     ruleDiagnostics: {
         currentWeights: PensionRuleWeight[];
         performance: PensionRulePerformance[];

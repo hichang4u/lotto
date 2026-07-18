@@ -16,7 +16,9 @@ export type PensionRuleWeightDiagnostic = {
   recentMatchRate: number
 }
 
-export const PENSION_ALGORITHM_VERSION = 'pension-multi-set-v2.2'
+type Rng = () => number
+
+export const PENSION_ALGORITHM_VERSION = 'pension-multi-set-v3.0'
 
 export const PENSION_RULES = {
   sumRange: '22-34',
@@ -26,11 +28,24 @@ export const PENSION_RULES = {
   maxDuplicateCount: 2,
   setProfiles: ['균형형', '홀수 집중형', '고유수 확장형', '저합계 안정형'],
   fallback: ['세트 규칙', '공통 규칙 완화 폴백', '통계 기반 폴백', '랜덤 폴백'],
+  portfolio: '세트 간 끝자리(7등 라인) 중복 회피',
 }
 
 const MAX_PENSION_ATTEMPTS = 300
 const PENSION_HISTORY_LOOKBACK = 60
-const PENSION_RULE_LOOKBACK = 24
+// 가중치 학습: 최근 회차일수록 크게 반영하는 지수 감쇠 반감기 (약 1년치)
+const PENSION_DECAY_HALF_LIFE = 52
+// 베이지안 수축 강도: 이론 확률을 이만큼의 가상 관측으로 간주해 소표본 노이즈를 억제
+const PENSION_PRIOR_STRENGTH = 24
+
+// 000000~999999 전수 열거로 구한 이론 확률 (scratchpad enumerate 스크립트로 산출)
+// passRate: 공통 규칙 ∧ 성향 규칙 동시 통과 확률, matchRate: 성향 규칙 단독 통과 확률
+const PENSION_THEORETICAL_RATES: Record<string, { passRate: number; matchRate: number }> = {
+  'balanced-core': { passRate: 0.167568, matchRate: 0.3125 },
+  'odd-focus': { passRate: 0.134076, matchRate: 0.234375 },
+  'unique-focus': { passRate: 0.343338, matchRate: 0.6048 },
+  'low-sum-stable': { passRate: 0.251414, matchRate: 0.360514 },
+}
 
 const PENSION_SET_CONFIGS: PensionSetConfig[] = [
   {
@@ -61,6 +76,18 @@ const PENSION_SET_CONFIGS: PensionSetConfig[] = [
     },
   },
 ]
+
+// mulberry32 — 백테스트 재현성을 위한 시드 기반 RNG
+export function createSeededRng(seed: number): Rng {
+  let state = seed >>> 0
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = state
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
 
 function getDigitSum(digits: number[]) {
   return digits.reduce((sum, digit) => sum + digit, 0)
@@ -119,9 +146,9 @@ function buildPensionMeta(digits: number[]) {
   }
 }
 
+// historyNumbers는 최신 회차가 앞에 오는(내림차순) 배열을 기대한다
 function parseHistoryDigits(historyNumbers: string[]) {
   return historyNumbers
-    .slice(0, PENSION_RULE_LOOKBACK)
     .map((raw) => raw.padStart(6, '0').slice(-6).split('').map(Number))
     .filter((digits) => digits.length === 6 && digits.every((digit) => Number.isFinite(digit)))
 }
@@ -129,29 +156,30 @@ function parseHistoryDigits(historyNumbers: string[]) {
 export function buildPensionRuleWeights(historyNumbers: string[]): PensionRuleWeightDiagnostic[] {
   const historyDigits = parseHistoryDigits(historyNumbers)
 
-  if (historyDigits.length === 0) {
-    return PENSION_SET_CONFIGS.map((config) => ({
-      ruleId: config.id,
-      label: config.label,
-      weight: config.baseWeight,
-      score: 0.5,
-      passRate: 0.5,
-      recentMatchRate: 0.5,
-    }))
-  }
-
   return PENSION_SET_CONFIGS.map((config) => {
-    let passCount = 0
-    let matchCount = 0
+    const prior = PENSION_THEORETICAL_RATES[config.id] ?? { passRate: 0.2, matchRate: 0.3 }
 
-    for (const digits of historyDigits) {
-      if (passesCommonPensionRules(digits) && config.check(digits)) passCount += 1
-      if (config.check(digits)) matchCount += 1
-    }
+    // 지수 감쇠 가중 관측: 최신 회차(i=0)가 가장 큰 비중
+    let decayedTotal = 0
+    let decayedPass = 0
+    let decayedMatch = 0
+    historyDigits.forEach((digits, index) => {
+      const decay = Math.pow(0.5, index / PENSION_DECAY_HALF_LIFE)
+      decayedTotal += decay
+      if (config.check(digits)) {
+        decayedMatch += decay
+        if (passesCommonPensionRules(digits)) decayedPass += decay
+      }
+    })
 
-    const passRate = passCount / historyDigits.length
-    const recentMatchRate = matchCount / historyDigits.length
-    const score = clamp(passRate * 0.65 + recentMatchRate * 0.35, 0.05, 1)
+    // 이론 확률을 prior로 두는 베이지안 수축 — 표본이 적을수록 이론값에 가깝게
+    const passRate = (decayedPass + PENSION_PRIOR_STRENGTH * prior.passRate) / (decayedTotal + PENSION_PRIOR_STRENGTH)
+    const matchRate = (decayedMatch + PENSION_PRIOR_STRENGTH * prior.matchRate) / (decayedTotal + PENSION_PRIOR_STRENGTH)
+
+    // 이론 대비 상대 강도(lift): 이력이 이론과 같으면 1 → score 0.5 → 전 성향 동일 가중치
+    const liftPass = passRate / prior.passRate
+    const liftMatch = matchRate / prior.matchRate
+    const score = clamp(0.5 * (liftPass * 0.65 + liftMatch * 0.35), 0.05, 1)
     const weight = Number((config.baseWeight * (0.75 + score)).toFixed(3))
 
     return {
@@ -160,14 +188,14 @@ export function buildPensionRuleWeights(historyNumbers: string[]): PensionRuleWe
       weight,
       score: Number(score.toFixed(3)),
       passRate: Number(passRate.toFixed(3)),
-      recentMatchRate: Number(recentMatchRate.toFixed(3)),
+      recentMatchRate: Number(matchRate.toFixed(3)),
     }
   }).sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label, 'ko'))
 }
 
-function weightedDigitPick(pool: number[]) {
+function weightedDigitPick(pool: number[], rng: Rng) {
   const total = pool.reduce((sum, weight) => sum + weight, 0)
-  let random = Math.random() * total
+  let random = rng() * total
 
   for (let digit = 0; digit < pool.length; digit++) {
     random -= pool[digit]
@@ -192,14 +220,39 @@ function buildHistoricalDigitWeights(historyNumbers: string[]) {
   return positionWeights
 }
 
-function buildStatisticalFallback(config: PensionSetConfig, historyNumbers: string[], ruleWeight?: number): PensionRecommendationSet | null {
+type PensionGenerateOptions = {
+  rng?: Rng
+  // 포트폴리오 다양화: 이미 다른 세트가 사용한 끝자리/끝 2자리 — 겹치면 "최소 한 번 당첨" 확률이 깎이므로 회피
+  avoidLastDigits?: Set<number>
+  avoidLastTwo?: Set<string>
+}
+
+function randomDigits(rng: Rng) {
+  return Array.from({ length: 6 }, () => Math.floor(rng() * 10))
+}
+
+function violatesTailConstraints(digits: number[], avoidLastDigits?: Set<number>, avoidLastTwo?: Set<string>) {
+  if (avoidLastDigits?.has(digits[5])) return true
+  if (avoidLastTwo?.has(`${digits[4]}${digits[5]}`)) return true
+  return false
+}
+
+function buildStatisticalFallback(
+  config: PensionSetConfig,
+  historyNumbers: string[],
+  ruleWeight: number | undefined,
+  options: PensionGenerateOptions,
+): PensionRecommendationSet | null {
   if (historyNumbers.length === 0) return null
 
+  const rng = options.rng ?? Math.random
   const positionWeights = buildHistoricalDigitWeights(historyNumbers)
 
   for (let attempt = 0; attempt < MAX_PENSION_ATTEMPTS; attempt++) {
-    const digits = positionWeights.map((weights) => weightedDigitPick(weights))
+    const digits = positionWeights.map((weights) => weightedDigitPick(weights, rng))
     if (!passesCommonPensionRules(digits)) continue
+    // 통계 폴백에서도 끝자리 중복 회피는 유지 — 시도 소진 시 4단계(미사용 끝자리 강제)로 넘어간다
+    if (violatesTailConstraints(digits, options.avoidLastDigits, options.avoidLastTwo)) continue
 
     return {
       label: config.label,
@@ -215,11 +268,20 @@ function buildStatisticalFallback(config: PensionSetConfig, historyNumbers: stri
   return null
 }
 
-export function buildPensionRecommendation(config: PensionSetConfig, historyNumbers: string[] = [], ruleWeight?: number): PensionRecommendationSet {
+export function buildPensionRecommendation(
+  config: PensionSetConfig,
+  historyNumbers: string[] = [],
+  ruleWeight?: number,
+  options: PensionGenerateOptions = {},
+): PensionRecommendationSet {
+  const rng = options.rng ?? Math.random
+
+  // 1단계: 공통 규칙 + 성향 규칙 + 끝자리 다양화 모두 충족
   for (let attempt = 0; attempt < MAX_PENSION_ATTEMPTS; attempt++) {
-    const digits = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10))
+    const digits = randomDigits(rng)
     if (!passesCommonPensionRules(digits)) continue
     if (!config.check(digits)) continue
+    if (violatesTailConstraints(digits, options.avoidLastDigits, options.avoidLastTwo)) continue
 
     return {
       label: config.label,
@@ -232,9 +294,11 @@ export function buildPensionRecommendation(config: PensionSetConfig, historyNumb
     }
   }
 
+  // 2단계(완화): 성향 규칙을 내려놓되 공통 규칙 + 끝자리 다양화는 유지
   for (let attempt = 0; attempt < MAX_PENSION_ATTEMPTS; attempt++) {
-    const digits = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10))
+    const digits = randomDigits(rng)
     if (!passesCommonPensionRules(digits)) continue
+    if (violatesTailConstraints(digits, options.avoidLastDigits, undefined)) continue
 
     return {
       label: config.label,
@@ -247,10 +311,18 @@ export function buildPensionRecommendation(config: PensionSetConfig, historyNumb
     }
   }
 
-  const statisticalFallback = buildStatisticalFallback(config, historyNumbers, ruleWeight)
+  // 3단계: 최근 이력의 자리별 출현 빈도 기반 통계 폴백
+  const statisticalFallback = buildStatisticalFallback(config, historyNumbers, ruleWeight, options)
   if (statisticalFallback) return statisticalFallback
 
-  const fallbackDigits = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10))
+  // 4단계(최종): 끝자리만 미사용 숫자로 강제한 랜덤 폴백
+  const availableLastDigits = Array.from({ length: 10 }, (_, digit) => digit)
+    .filter((digit) => !options.avoidLastDigits?.has(digit))
+  const fallbackDigits = randomDigits(rng)
+  if (availableLastDigits.length > 0) {
+    fallbackDigits[5] = availableLastDigits[Math.floor(rng() * availableLastDigits.length)]
+  }
+
   return {
     label: config.label,
     number: fallbackDigits.join(''),
@@ -262,12 +334,27 @@ export function buildPensionRecommendation(config: PensionSetConfig, historyNumb
   }
 }
 
-export function buildPensionRecommendations(historyNumbers: string[] = []) {
+export function buildPensionRecommendations(historyNumbers: string[] = [], rng: Rng = Math.random) {
   const ruleWeights = buildPensionRuleWeights(historyNumbers)
-  const weightMap = new Map(ruleWeights.map((entry) => [entry.ruleId, entry.weight]))
+  const configById = new Map(PENSION_SET_CONFIGS.map((config) => [config.id, config]))
 
-  return PENSION_SET_CONFIGS
-    .slice()
-    .sort((a, b) => (weightMap.get(b.id) ?? b.baseWeight) - (weightMap.get(a.id) ?? a.baseWeight))
-    .map((config) => buildPensionRecommendation(config, historyNumbers, weightMap.get(config.id) ?? config.baseWeight))
+  const avoidLastDigits = new Set<number>()
+  const avoidLastTwo = new Set<string>()
+
+  // 진단에 표시되는 우선순위(동점 시 한글 라벨 순 포함)와 동일한 순서로 생성 → 첫 세트가 대표 추천
+  return ruleWeights
+    .map((entry) => {
+      const config = configById.get(entry.ruleId)
+      if (!config) return null
+      const set = buildPensionRecommendation(config, historyNumbers, entry.weight, {
+        rng,
+        avoidLastDigits,
+        avoidLastTwo,
+      })
+      const digits = set.number.split('')
+      avoidLastDigits.add(Number(digits[5]))
+      avoidLastTwo.add(`${digits[4]}${digits[5]}`)
+      return set
+    })
+    .filter((set): set is PensionRecommendationSet => set !== null)
 }

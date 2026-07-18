@@ -11,6 +11,23 @@ import {
     PensionRulePerformanceCard,
 } from './PensionCards';
 
+// 꼬리 일치 자리수(1~6) → 연금복권 등수 표기 (조 일치는 모델 범위 밖이라 6자리 일치는 2등 상당)
+const PENSION_PRIZE_TIER_LABELS: Record<number, string> = {
+    1: '7등',
+    2: '6등',
+    3: '5등',
+    4: '4등',
+    5: '3등',
+    6: '2등',
+};
+
+function formatPrizeCounts(counts: Record<number, number>) {
+    const parts = [6, 5, 4, 3, 2, 1]
+        .filter(tier => (counts[tier] ?? 0) > 0)
+        .map(tier => `${PENSION_PRIZE_TIER_LABELS[tier]} ${counts[tier]}회`);
+    return parts.length > 0 ? parts.join(' · ') : '당첨 없음';
+}
+
 export function PensionPage({
     onSyncMessage,
     onSyncError,
@@ -141,7 +158,7 @@ export function PensionPage({
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between border-b-2 border-black pb-3">
                                 <div>
                                     <p className="text-[11px] font-black uppercase tracking-widest text-slate-700">추천 성향 분석</p>
-                                    <h3 className="mt-1 text-lg font-black text-black">최근 24회 기준 추천 성향 우선순위</h3>
+                                    <h3 className="mt-1 text-lg font-black text-black">전체 이력 감쇠 가중 기준 추천 성향 우선순위</h3>
                                 </div>
                                 <p className="text-xs font-bold text-slate-700 sm:text-sm">점수가 높은 추천 성향을 먼저 적용합니다.</p>
                             </div>
@@ -211,12 +228,34 @@ export function PensionPage({
                                     <div className="mt-1 text-xl font-black text-black">{pensionBacktestDiagnostics.totalGeneratedSets}</div>
                                 </div>
                                 <div className="border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[3px_3px_0px_0px_#000000]">
-                                    <div className="text-xs font-bold text-slate-700">세트 평균 정확 일치</div>
-                                    <div className="mt-1 text-xl font-black text-black">{pensionBacktestDiagnostics.averageExactMatchPerSet.toFixed(3)}</div>
+                                    <div className="text-xs font-bold text-slate-700">세트 평균 꼬리 일치</div>
+                                    <div className="mt-1 text-xl font-black text-black">{pensionBacktestDiagnostics.averageSuffixMatchPerSet.toFixed(3)}</div>
                                 </div>
                                 <div className="border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[3px_3px_0px_0px_#000000]">
-                                    <div className="text-xs font-bold text-slate-700">회차 최고 평균 정확 일치</div>
-                                    <div className="mt-1 text-xl font-black text-black">{pensionBacktestDiagnostics.averageBestExactMatchPerDraw.toFixed(3)}</div>
+                                    <div className="text-xs font-bold text-slate-700">랜덤 대비 (꼬리 일치)</div>
+                                    <div className="mt-1 text-xl font-black text-black">
+                                        {(pensionBacktestDiagnostics.averageSuffixMatchPerSet - pensionBacktestDiagnostics.baseline.averageSuffixMatchPerSet) >= 0 ? '+' : ''}
+                                        {(pensionBacktestDiagnostics.averageSuffixMatchPerSet - pensionBacktestDiagnostics.baseline.averageSuffixMatchPerSet).toFixed(3)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 상금 구조(꼬리 일치) 기준 시뮬레이션 당첨 집계 */}
+                            <div className="mt-4 border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[3px_3px_0px_0px_#000000]">
+                                <div className="text-xs font-bold text-slate-700">시뮬레이션 당첨 (평가 구간 누적)</div>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-black">
+                                    <span className="text-xs font-bold text-slate-500">추천 세트</span>
+                                    <span>{formatPrizeCounts(pensionBacktestDiagnostics.prizeCounts)}</span>
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-slate-600">
+                                    <span className="text-xs font-bold text-slate-500">랜덤 대조군</span>
+                                    <span>{formatPrizeCounts(pensionBacktestDiagnostics.baseline.prizeCounts)}</span>
+                                </div>
+                                {/* 끝자리 다양화 효과가 드러나는 회차 단위 지표 */}
+                                <div className="mt-2 border-t border-slate-200 pt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-slate-700">
+                                    <span className="text-xs font-bold text-slate-500">회차당 최소 1개 당첨률</span>
+                                    <span className="font-black text-black">추천 {pensionBacktestDiagnostics.atLeastOnePrizeRate.toFixed(1)}%</span>
+                                    <span>· 랜덤 {pensionBacktestDiagnostics.baseline.atLeastOnePrizeRate.toFixed(1)}%</span>
                                 </div>
                             </div>
 
@@ -247,7 +286,7 @@ export function PensionPage({
                                         <p className="text-[11px] font-black uppercase tracking-widest text-slate-700">성향 성과 분석</p>
                                         <h3 className="mt-1 text-lg font-black text-black">추천 성향별 백테스트 성과</h3>
                                     </div>
-                                    <p className="text-xs font-bold text-slate-700 sm:text-sm">추천 성향별 정확 일치 성과를 비교합니다.</p>
+                                    <p className="text-xs font-bold text-slate-700 sm:text-sm">추천 성향별 꼬리 일치 성과를 비교합니다.</p>
                                 </div>
                                 <div className="mt-4 grid gap-3 lg:grid-cols-2">
                                     {pensionBacktestDiagnostics.ruleDiagnostics.performance.map((item) => (

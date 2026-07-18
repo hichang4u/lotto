@@ -139,19 +139,19 @@ export function PensionRulePerformanceCard({ item }: { item: PensionRulePerforma
                     <div className="mt-1 text-xs font-bold text-slate-500">생성 {item.generatedCount}회</div>
                 </div>
                 <span className="neo-badge neo-badge-purple text-xs">
-                    평균 정확 일치 {item.averageExactMatches.toFixed(3)}
+                    평균 꼬리 일치 {item.averageSuffixMatches.toFixed(3)}
                 </span>
             </div>
 
             {/* 규칙별 세부 일치 지표 (내부 블랙 보더 제거 및 심플 레이아웃화) */}
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-bold text-slate-700 sm:text-sm">
                 <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-2 shadow-sm">
-                    <div className="text-[10px] text-slate-500">3자리 이상 일치</div>
-                    <div className="mt-1 font-black text-black">{item.exactMatch3PlusRate.toFixed(1)}%</div>
+                    <div className="text-[10px] text-slate-500">끝 1자리 이상 (7등 상당)</div>
+                    <div className="mt-1 font-black text-black">{item.suffix1PlusRate.toFixed(1)}%</div>
                 </div>
                 <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-2 shadow-sm">
-                    <div className="text-[10px] text-slate-500">4자리 이상 일치</div>
-                    <div className="mt-1 font-black text-black">{item.exactMatch4PlusRate.toFixed(1)}%</div>
+                    <div className="text-[10px] text-slate-500">끝 2자리 이상 (6등 상당)</div>
+                    <div className="mt-1 font-black text-black">{item.suffix2PlusRate.toFixed(1)}%</div>
                 </div>
             </div>
         </div>
