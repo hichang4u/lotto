@@ -290,8 +290,14 @@ function pickSet(
 ): GeneratedSet {
   // 완화 사다리: 기존 세트와의 중복 허용치를 0 → 1 → 2로 단계적 완화
   for (const maxOverlap of [0, 1, 2]) {
+    // 0단계는 미사용 번호 풀에서 직접 샘플링해 비중첩 성공률을 높인다 (1~2단계는 전체 풀 유지)
+    const rungWeights = maxOverlap === 0
+      ? weights.filter((entry) => !usedNumbers.has(entry.num))
+      : weights
+    if (rungWeights.length < 6) continue
+
     for (let attempt = 0; attempt < MAX_PICK_ATTEMPTS; attempt++) {
-      const numbers = pickWeightedNumbers(weights, rng)
+      const numbers = pickWeightedNumbers(rungWeights, rng)
       if (countOverlap(numbers, usedNumbers) > maxOverlap) continue
       if (passesCommonRules(numbers) && config.check(numbers)) {
         return {
