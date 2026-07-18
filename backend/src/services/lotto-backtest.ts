@@ -85,6 +85,7 @@ export function runLottoBacktest(results: DrawNumbersRow[], lookback: number): L
       const matches = matchCounts[i]
       const meta = sets[i].meta
       const passedRules = meta?.passedRules ?? []
+      const hasBonus = sets[i].numbers.includes(target.bnusNo ?? -1)
       const perf = meta?.ruleId ? rulePerf.get(meta.ruleId) : undefined
 
       totalSets += 1
@@ -105,8 +106,8 @@ export function runLottoBacktest(results: DrawNumbersRow[], lookback: number): L
       if (matches >= 3) threePlusCount += 1
       if (matches >= 4) fourPlusCount += 1
       if (matches >= 5) fivePlusCount += 1
-      if (matches === 5 && sets[i].numbers.includes(target.bnusNo ?? -1)) bonusHitCount += 1
-      const tier = getPrizeTier(matches, sets[i].numbers.includes(target.bnusNo ?? -1))
+      if (matches === 5 && hasBonus) bonusHitCount += 1
+      const tier = getPrizeTier(matches, hasBonus)
       if (tier !== null) prizeCounts[tier] += 1
     }
 
