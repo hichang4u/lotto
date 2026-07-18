@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Info, Search, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Info, Search, Sparkles, Ticket } from 'lucide-react';
 import { useLottoPage } from '../../hooks/useLottoPage';
-import { usePurchases } from '../../hooks/usePurchases';
+import { usePurchases, summarizeTicketResult } from '../../hooks/usePurchases';
 import { formatDateTime } from '../../utils/format';
 import { SectionCard } from '../ui/SectionCard';
 import { Ball } from '../ui/Ball';
@@ -9,6 +9,7 @@ import { DrawResultCard } from './DrawResultCard';
 import { RecommendationCard } from './RecommendationCard';
 import { RuleWeightCard, RulePerformanceCard } from './RuleCards';
 import { PurchaseTicketModal } from './PurchaseTicketModal';
+import { PurchaseHistorySection } from './PurchaseHistorySection';
 
 // 등수(1~5) → 시뮬레이션 당첨 표기. 높은 등수부터 표시
 function formatLottoPrizeCounts(counts: Record<number, number>) {
@@ -53,9 +54,14 @@ export function LottoPage({
         goToNextDraw,
     } = useLottoPage();
 
-    const { savePurchase, saving } = usePurchases();
+    const { savePurchase, saving, tickets, purchasesLoading, loadPurchases, deleteTicket, refreshAfterSync } = usePurchases();
     const [showTicketModal, setShowTicketModal] = useState(false);
     const targetDrawNo = latestDrawNo + 1;
+
+    useEffect(() => {
+        loadPurchases();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSavePurchase = async () => {
         if (!window.confirm(`제 ${targetDrawNo}회 추첨 대상으로 5게임을 저장할까요?`)) return;
@@ -68,7 +74,23 @@ export function LottoPage({
         }
     };
 
-    const handleSync = () => syncLatestResults(onSyncMessage, onSyncError);
+    const handleSync = () => syncLatestResults(
+        async (msg) => {
+            onSyncMessage(msg);
+            // 동기화로 새 회차가 들어왔다면 pending 티켓이 판정됐는지 확인해 알림
+            const newlyJudged = await refreshAfterSync();
+            if (newlyJudged.length > 0) {
+                onSyncMessage(newlyJudged.map(summarizeTicketResult).join(' / '));
+            }
+        },
+        onSyncError,
+    );
+
+    const handleDeleteTicket = async (ticketId: string) => {
+        if (!window.confirm('이 구매 기록을 삭제할까요?')) return;
+        const ok = await deleteTicket(ticketId);
+        if (!ok) onSyncError('구매 기록 삭제에 실패했습니다.');
+    };
 
     return (
         /* space-y-10 sm:space-y-12를 통해 전체 섹션 간의 여백을 넉넉하게 확보 */
@@ -314,7 +336,23 @@ export function LottoPage({
                 </SectionCard>
             </section>
 
-
+            {/* 내 구매 기록 섹션 */}
+            <section>
+                <SectionCard
+                    title="내 구매 기록"
+                    eyebrow="구매번호 관리"
+                    icon={<Ticket className="h-5 w-5" />}
+                >
+                    <p className="mb-4 text-sm font-bold text-slate-700">
+                        저장한 구매번호는 이 브라우저 기준으로 보관되며, 당첨번호 동기화 시 자동으로 판정됩니다.
+                    </p>
+                    <PurchaseHistorySection
+                        tickets={tickets}
+                        loading={purchasesLoading}
+                        onDelete={handleDeleteTicket}
+                    />
+                </SectionCard>
+            </section>
 
             {/* 하단 번호대 색상 안내 및 서비스 유의사항 (풋터 스타일 경량화) */}
             <footer className="border-t-3 border-black pt-8 space-y-6">
