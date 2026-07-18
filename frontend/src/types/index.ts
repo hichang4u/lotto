@@ -111,6 +111,14 @@ export type LottoBacktestDiagnostics = {
     evaluatedDraws: number;
     averageMatchPerSet: number;
     averageBestMatchPerDraw: number;
+    atLeastOnePrizeRate: number;
+    prizeCounts: Record<number, number>;
+    baseline: {
+        totalSets: number;
+        averageMatchPerSet: number;
+        atLeastOnePrizeRate: number;
+        prizeCounts: Record<number, number>;
+    };
     generationQuality: {
         commonRulePassRate: number;
         relaxedFallbackRate: number;

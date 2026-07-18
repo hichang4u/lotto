@@ -7,6 +7,14 @@ import { DrawResultCard } from './DrawResultCard';
 import { RecommendationCard } from './RecommendationCard';
 import { RuleWeightCard, RulePerformanceCard } from './RuleCards';
 
+// 등수(1~5) → 시뮬레이션 당첨 표기. 높은 등수부터 표시
+function formatLottoPrizeCounts(counts: Record<number, number>) {
+    const parts = [1, 2, 3, 4, 5]
+        .filter(tier => (counts[tier] ?? 0) > 0)
+        .map(tier => `${tier}등 ${counts[tier]}회`);
+    return parts.length > 0 ? parts.join(' · ') : '당첨 없음';
+}
+
 export function LottoPage({
     onSyncMessage,
     onSyncError,
@@ -137,7 +145,7 @@ export function LottoPage({
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between border-b-2 border-black pb-3">
                                 <div>
                                     <p className="text-[11px] font-black uppercase tracking-widest text-slate-700">규칙 가중치 분석</p>
-                                    <h3 className="mt-1 text-lg font-black text-black">최근 24회 기준 추천 규칙 우선순위</h3>
+                                    <h3 className="mt-1 text-lg font-black text-black">전체 이력 감쇠 가중 기준 추천 규칙 우선순위</h3>
                                 </div>
                                 <p className="text-xs font-bold text-slate-700 sm:text-sm">점수가 높은 규칙을 먼저 적용해 추천 세트를 만듭니다.</p>
                             </div>
@@ -201,6 +209,25 @@ export function LottoPage({
                                 <div className="border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[3px_3px_0px_0px_#000000]">
                                     <div className="text-xs font-bold text-slate-700">공통 규칙 통과율</div>
                                     <div className="mt-1 text-xl font-black text-black">{backtestDiagnostics.generationQuality.commonRulePassRate.toFixed(1)}%</div>
+                                </div>
+                            </div>
+
+                            {/* 상금 구조 기준 시뮬레이션 당첨 집계 (연금 페이지와 동일 형식) */}
+                            <div className="mt-4 border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[3px_3px_0px_0px_#000000]">
+                                <div className="text-xs font-bold text-slate-700">시뮬레이션 당첨 (평가 구간 누적)</div>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-black">
+                                    <span className="text-xs font-bold text-slate-500">추천 세트</span>
+                                    <span>{formatLottoPrizeCounts(backtestDiagnostics.prizeCounts)}</span>
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-slate-600">
+                                    <span className="text-xs font-bold text-slate-500">랜덤 대조군</span>
+                                    <span>{formatLottoPrizeCounts(backtestDiagnostics.baseline.prizeCounts)}</span>
+                                </div>
+                                {/* 비중첩 다양화 효과가 드러나는 회차 단위 지표 */}
+                                <div className="mt-2 border-t border-slate-200 pt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-slate-700">
+                                    <span className="text-xs font-bold text-slate-500">회차당 최소 1개 당첨률 (3개 이상 일치)</span>
+                                    <span className="font-black text-black">추천 {backtestDiagnostics.atLeastOnePrizeRate.toFixed(1)}%</span>
+                                    <span>· 랜덤 {backtestDiagnostics.baseline.atLeastOnePrizeRate.toFixed(1)}%</span>
                                 </div>
                             </div>
 
