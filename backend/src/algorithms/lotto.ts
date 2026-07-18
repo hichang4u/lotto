@@ -1,4 +1,5 @@
 import type { DrawNumbersRow, GeneratedSet } from '../types/lotto'
+import { clamp, shrinkRate } from './statistics'
 
 type SetConfig = {
   id: string
@@ -18,7 +19,7 @@ export type RuleWeightDiagnostic = {
 
 const COLS = ['drwtNo1', 'drwtNo2', 'drwtNo3', 'drwtNo4', 'drwtNo5', 'drwtNo6'] as const
 
-export const LOTTO_ALGORITHM_VERSION = 'v3.2'
+export const LOTTO_ALGORITHM_VERSION = 'v4.0'
 
 export const SET_CONFIGS: SetConfig[] = [
   {
@@ -61,15 +62,26 @@ export const SET_CONFIGS: SetConfig[] = [
   },
 ]
 
+// 가중치 학습: 최근 회차일수록 크게 반영하는 지수 감쇠 반감기 (주 1회 추첨, 약 1년치)
+const LOTTO_DECAY_HALF_LIFE = 52
+// 베이지안 수축 강도: 이론 확률을 이만큼의 가상 관측으로 간주해 소표본 노이즈를 억제
+const LOTTO_PRIOR_STRENGTH = 24
+
+// 1~45 중 6개 조합(45C6 = 8,145,060) 전수 열거로 구한 이론 확률
+// passRate: 공통 규칙 ∧ 성향 규칙 동시 통과 확률, matchRate: 성향 규칙 단독 통과 확률
+// (공통 규칙 단독 통과율: 0.522828)
+const LOTTO_THEORETICAL_RATES: Record<string, { passRate: number; matchRate: number }> = {
+  'odd-balance': { passRate: 0.210928, matchRate: 0.334846 },
+  'no-consecutive-pair': { passRate: 0.261534, matchRate: 0.471253 },
+  'stable-sum': { passRate: 0.414568, matchRate: 0.540736 },
+  'zone-distribution': { passRate: 0.380643, matchRate: 0.639652 },
+  'tail-balance': { passRate: 0.122234, matchRate: 0.209710 },
+}
+
 const RECENT_DRAW_COUNT = 50
 const COLD_DRAW_COUNT = 15
 const AGE_BONUS_WINDOW = 10
 const MAX_PICK_ATTEMPTS = 300
-const RULE_WEIGHT_LOOKBACK = 24
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
-}
 
 function buildFallbackSet(label: string, ruleId?: string, ruleWeight?: number): GeneratedSet {
   const picked = new Set<number>()
@@ -118,32 +130,33 @@ function buildSetMeta(numbers: number[], passedRules: string[], ruleId?: string,
 }
 
 export function buildRuleWeights(draws: DrawNumbersRow[]): RuleWeightDiagnostic[] {
-  const lookbackDraws = draws.slice(-Math.min(RULE_WEIGHT_LOOKBACK, draws.length))
-
-  if (lookbackDraws.length === 0) {
-    return SET_CONFIGS.map((config) => ({
-      ruleId: config.id,
-      label: config.label,
-      weight: config.baseWeight,
-      score: 0.5,
-      passRate: 0.5,
-      recentMatchRate: 0.5,
-    }))
-  }
+  const parsed = draws.map((draw) => COLS.map((col) => draw[col]).sort((a, b) => a - b))
 
   return SET_CONFIGS.map((config) => {
-    let passCount = 0
-    let recentMatchCount = 0
+    const prior = LOTTO_THEORETICAL_RATES[config.id] ?? { passRate: 0.25, matchRate: 0.4 }
 
-    for (const draw of lookbackDraws) {
-      const numbers = COLS.map((col) => draw[col]).sort((a, b) => a - b)
-      if (passesCommonRules(numbers) && config.check(numbers)) passCount += 1
-      if (config.check(numbers)) recentMatchCount += 1
-    }
+    // 지수 감쇠 가중 관측 — 입력은 과거순(ASC)이므로 최신 회차의 나이가 0
+    let decayedTotal = 0
+    let decayedPass = 0
+    let decayedMatch = 0
+    parsed.forEach((numbers, index) => {
+      const ageFromNewest = parsed.length - 1 - index
+      const decay = Math.pow(0.5, ageFromNewest / LOTTO_DECAY_HALF_LIFE)
+      decayedTotal += decay
+      if (config.check(numbers)) {
+        decayedMatch += decay
+        if (passesCommonRules(numbers)) decayedPass += decay
+      }
+    })
 
-    const passRate = passCount / lookbackDraws.length
-    const recentMatchRate = recentMatchCount / lookbackDraws.length
-    const score = clamp(passRate * 0.65 + recentMatchRate * 0.35, 0.05, 1)
+    // 이론 확률을 prior로 두는 베이지안 수축 — 표본이 적을수록 이론값에 가깝게
+    const passRate = shrinkRate(decayedPass, decayedTotal, prior.passRate, LOTTO_PRIOR_STRENGTH)
+    const matchRate = shrinkRate(decayedMatch, decayedTotal, prior.matchRate, LOTTO_PRIOR_STRENGTH)
+
+    // 이론 대비 상대 강도(lift): 이력이 이론과 같으면 1 → score 0.5 → 전 성향 동일 가중치
+    const liftPass = passRate / prior.passRate
+    const liftMatch = matchRate / prior.matchRate
+    const score = clamp(0.5 * (liftPass * 0.65 + liftMatch * 0.35), 0.05, 1)
     const weight = Number((config.baseWeight * (0.75 + score)).toFixed(3))
 
     return {
@@ -152,7 +165,7 @@ export function buildRuleWeights(draws: DrawNumbersRow[]): RuleWeightDiagnostic[
       weight,
       score: Number(score.toFixed(3)),
       passRate: Number(passRate.toFixed(3)),
-      recentMatchRate: Number(recentMatchRate.toFixed(3)),
+      recentMatchRate: Number(matchRate.toFixed(3)),
     }
   }).sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label, 'ko'))
 }
