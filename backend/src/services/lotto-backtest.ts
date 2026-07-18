@@ -1,4 +1,5 @@
 import { buildGeneratedSets, buildRuleWeights, countMatches, LOTTO_ALGORITHM_VERSION, SET_CONFIGS } from '../algorithms/lotto'
+import { createSeededRng } from '../algorithms/statistics'
 import { getAllLottoBacktestRowsQuery } from '../queries/lotto'
 import type { DrawNumbersRow, LottoBacktestSummary } from '../types/lotto'
 
@@ -6,6 +7,26 @@ const MIN_BACKTEST_DRAWS = 40
 const MIN_TRAINING_DRAWS = 30
 
 const DRAW_NUM_COLS = ['drwtNo1', 'drwtNo2', 'drwtNo3', 'drwtNo4', 'drwtNo5', 'drwtNo6'] as const
+
+// 일치 수 + 보너스 → 등수 (해당 없으면 null)
+function getPrizeTier(matches: number, hasBonus: boolean): number | null {
+  if (matches === 6) return 1
+  if (matches === 5 && hasBonus) return 2
+  if (matches === 5) return 3
+  if (matches === 4) return 4
+  if (matches === 3) return 5
+  return null
+}
+
+function emptyPrizeCounts(): Record<number, number> {
+  return { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+}
+
+function randomLottoNumbers(rng: () => number) {
+  const picked = new Set<number>()
+  while (picked.size < 6) picked.add(Math.floor(rng() * 45) + 1)
+  return Array.from(picked)
+}
 
 export function runLottoBacktest(results: DrawNumbersRow[], lookback: number): LottoBacktestSummary {
   if (results.length < MIN_BACKTEST_DRAWS) {
@@ -37,6 +58,12 @@ export function runLottoBacktest(results: DrawNumbersRow[], lookback: number): L
   let threePlusCount = 0
   let fourPlusCount = 0
   let fivePlusCount = 0
+  let drawsWithPrize = 0
+  const prizeCounts = emptyPrizeCounts()
+  let baselineSets = 0
+  let baselineMatches = 0
+  let baselineDrawsWithPrize = 0
+  const baselinePrizeCounts = emptyPrizeCounts()
   const rulePerf = new Map(SET_CONFIGS.map((config) => [config.id, {
     ruleId: config.id,
     label: config.label,
@@ -48,7 +75,9 @@ export function runLottoBacktest(results: DrawNumbersRow[], lookback: number): L
   }]))
 
   for (const target of targetDraws) {
-    const sets = buildGeneratedSets(results.filter(row => (row.drwNo ?? 0) < (target.drwNo ?? 0)))
+    // 회차 번호 시드 → 진단 결과가 호출 시마다 흔들리지 않고 재현 가능
+    const rng = createSeededRng(0x9e3779b9 ^ (target.drwNo ?? 0))
+    const sets = buildGeneratedSets(results.filter(row => (row.drwNo ?? 0) < (target.drwNo ?? 0)), rng)
     const matchCounts = sets.map(set => countMatches(set.numbers, target))
     const bestMatch = Math.max(...matchCounts)
 
@@ -77,10 +106,26 @@ export function runLottoBacktest(results: DrawNumbersRow[], lookback: number): L
       if (matches >= 4) fourPlusCount += 1
       if (matches >= 5) fivePlusCount += 1
       if (matches === 5 && sets[i].numbers.includes(target.bnusNo ?? -1)) bonusHitCount += 1
+      const tier = getPrizeTier(matches, sets[i].numbers.includes(target.bnusNo ?? -1))
+      if (tier !== null) prizeCounts[tier] += 1
     }
 
     bestMatchSum += bestMatch
     bestHitDistribution[bestMatch] += 1
+    if (bestMatch >= 3) drawsWithPrize += 1
+
+    // 랜덤 대조군: 같은 회차에 같은 개수의 순수 랜덤 세트를 같은 RNG 흐름으로 생성
+    let baselineBest = 0
+    for (let i = 0; i < sets.length; i++) {
+      const randomNumbers = randomLottoNumbers(rng)
+      const matches = countMatches(randomNumbers, target)
+      baselineSets += 1
+      baselineMatches += matches
+      if (matches > baselineBest) baselineBest = matches
+      const tier = getPrizeTier(matches, randomNumbers.includes(target.bnusNo ?? -1))
+      if (tier !== null) baselinePrizeCounts[tier] += 1
+    }
+    if (baselineBest >= 3) baselineDrawsWithPrize += 1
   }
 
   return {
@@ -90,6 +135,14 @@ export function runLottoBacktest(results: DrawNumbersRow[], lookback: number): L
     totalGeneratedSets: totalSets,
     averageMatchPerSet: Number((totalMatches / totalSets).toFixed(3)),
     averageBestMatchPerDraw: Number((bestMatchSum / targetDraws.length).toFixed(3)),
+    atLeastOnePrizeRate: Number((drawsWithPrize / targetDraws.length * 100).toFixed(2)),
+    prizeCounts,
+    baseline: {
+      totalSets: baselineSets,
+      averageMatchPerSet: Number((baselineMatches / Math.max(baselineSets, 1)).toFixed(3)),
+      atLeastOnePrizeRate: Number((baselineDrawsWithPrize / targetDraws.length * 100).toFixed(2)),
+      prizeCounts: baselinePrizeCounts,
+    },
     generationQuality: {
       commonRulePassRate: Number((commonRulePassCount / totalSets * 100).toFixed(2)),
       relaxedFallbackRate: Number((relaxedFallbackCount / totalSets * 100).toFixed(2)),
