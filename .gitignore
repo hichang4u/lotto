@@ -41,3 +41,6 @@ Thumbs.db
 *.suo
 *.user
 .claude/
+
+# Local MCP config
+.mcp.json
