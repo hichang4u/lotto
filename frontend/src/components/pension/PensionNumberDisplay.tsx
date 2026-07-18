@@ -7,7 +7,7 @@ export function PensionDigitBall({ value, color, size = 'md' }: { value: string;
     return (
         /* 동행복권 공식 스타일: 흰 바탕 + 자리별 색상 링 + 진네이비 숫자 */
         <div
-            className={`flex shrink-0 items-center justify-center rounded-full font-black ${sizeClass}`}
+            className={`font-display flex shrink-0 items-center justify-center rounded-full font-black ${sizeClass}`}
             style={{
                 border: `${size === 'sm' ? 3 : 4}px solid ${color}`,
                 background: '#ffffff',
