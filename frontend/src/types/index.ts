@@ -86,6 +86,32 @@ export type LottoSet = {
     };
 };
 
+export type PurchaseGameResult = {
+    gameIndex: number;
+    numbers: number[];
+    ruleId: string | null;
+    label: string | null;
+    ruleWeight: number | null;
+    matches: number | null;
+    hasBonus: boolean | null;
+    rank: number | null;
+};
+
+export type PurchaseTicket = {
+    ticketId: string;
+    drawNo: number;
+    algorithm: string | null;
+    createdAt: string;
+    status: 'pending' | 'judged';
+    draw: {
+        drwNo: number;
+        numbers: number[];
+        bnusNo: number;
+        drwNoDate: string;
+    } | null;
+    games: PurchaseGameResult[];
+};
+
 export type LottoRuleWeight = {
     ruleId: string;
     label: string;

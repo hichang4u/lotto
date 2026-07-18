@@ -13,6 +13,7 @@ export function useLottoPage() {
     const [backtestDiagnostics, setBacktestDiagnostics] = useState<LottoBacktestDiagnostics | null>(null);
     const [backtestLoading, setBacktestLoading] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [algorithm, setAlgorithm] = useState<string | null>(null);
 
     const [results, setResults] = useState<DrawResult[]>([]);
     const [resultsLoading, setResultsLoading] = useState(false);
@@ -122,6 +123,7 @@ export function useLottoPage() {
             const data = await res.json();
             setSets(data.sets);
             setRuleWeights(Array.isArray(data.ruleWeights) ? data.ruleWeights : []);
+            setAlgorithm(typeof data.algorithm === 'string' ? data.algorithm : null);
         } catch {
             const fallback = FALLBACK_LABELS.map(label => {
                 const s = new Set<number>();
@@ -130,6 +132,7 @@ export function useLottoPage() {
             });
             setSets(fallback);
             setRuleWeights([]);
+            setAlgorithm(null);
         } finally {
             setLoading(false);
         }
@@ -246,6 +249,8 @@ export function useLottoPage() {
         backtestDiagnostics,
         backtestLoading,
         loading,
+        algorithm,
+        latestDrawNo: maxDrawNo,
         results,
         resultsLoading: resultsLoading || isStale,
         syncLoading,

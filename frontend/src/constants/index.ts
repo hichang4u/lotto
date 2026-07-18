@@ -2,6 +2,7 @@ export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8787';
 
 export const FALLBACK_LABELS = ['홀짝 균형형', '연속 독립형', '합계 안정형', '구간 분포형', '끝수 균형형'];
 
+export const DEVICE_ID_STORAGE_KEY = 'lotto-device-id';
 export const LAST_SYNC_STORAGE_KEY = 'lotto-last-synced-at';
 export const LAST_SYNC_DRAW_STORAGE_KEY = 'lotto-last-synced-draw';
 export const PENSION_LAST_SYNC_STORAGE_KEY = 'pension_last_sync_time';
