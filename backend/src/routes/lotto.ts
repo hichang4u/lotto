@@ -60,6 +60,9 @@ export function createLottoRoutes() {
       } catch {
         return c.json({ error: '요청 본문이 올바르지 않습니다.' }, 400)
       }
+      if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+        return c.json({ error: '요청 본문이 올바르지 않습니다.' }, 400)
+      }
       const result = await savePurchaseTicket(c.env.DB, body)
       return c.json({ success: true, ...result })
     }, {
