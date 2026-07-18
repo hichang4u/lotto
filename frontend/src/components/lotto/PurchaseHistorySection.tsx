@@ -9,12 +9,12 @@ const GAME_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 // 게임별 판정 배지: 추첨 전 / N등 / 낙첨
 function GameRankBadge({ game }: { game: PurchaseGameResult }) {
     if (game.rank === null) {
-        return <span className="neo-badge py-0.5 text-[10px]">추첨 전</span>;
+        return <span className="neo-badge neo-badge-compact py-0.5 text-[10px]">추첨 전</span>;
     }
     if (game.rank >= 1) {
-        return <span className="neo-badge neo-badge-yellow py-0.5 text-[10px]">{game.rank}등</span>;
+        return <span className="neo-badge neo-badge-compact neo-badge-yellow py-0.5 text-[10px]">{game.rank}등</span>;
     }
-    return <span className="neo-badge py-0.5 text-[10px] text-slate-500">낙첨</span>;
+    return <span className="neo-badge neo-badge-compact py-0.5 text-[10px] text-slate-500">낙첨</span>;
 }
 
 function PurchaseGameRow({ game, draw }: { game: PurchaseGameResult; draw: PurchaseTicket['draw'] }) {
@@ -22,11 +22,11 @@ function PurchaseGameRow({ game, draw }: { game: PurchaseGameResult; draw: Purch
     const ruleName = game.ruleId ? (LOTTO_RULE_LABELS[game.ruleId] ?? game.ruleId) : game.label;
 
     return (
-        <div className="flex items-center gap-2.5 border-b border-slate-200 py-2 last:border-b-0">
-            <span className="w-5 shrink-0 text-center text-sm font-black text-black">
+        <div className="flex items-center gap-1.5 border-b border-slate-200 py-2 last:border-b-0 sm:gap-2.5">
+            <span className="w-4 shrink-0 text-center text-xs font-black text-black sm:w-5 sm:text-sm">
                 {GAME_LETTERS[game.gameIndex] ?? game.gameIndex + 1}
             </span>
-            <div className="flex flex-1 items-center gap-1.5">
+            <div className="flex flex-1 items-center gap-1 sm:gap-1.5">
                 {game.numbers.map(num => {
                     // 판정 완료 시: 일치 볼만 원래 색, 불일치 볼은 회색조 + 반투명
                     const matched = judged && draw.numbers.includes(num);
@@ -37,7 +37,7 @@ function PurchaseGameRow({ game, draw }: { game: PurchaseGameResult; draw: Purch
                             className="relative inline-flex"
                             style={judged && !matched && !bonusMatched ? { filter: 'grayscale(1)', opacity: 0.35 } : undefined}
                         >
-                            <Ball num={num} size="sm" />
+                            <Ball num={num} size="compact" />
                             {bonusMatched && <BonusBadge compact />}
                         </span>
                     );

@@ -1,12 +1,15 @@
 import { getBallTheme } from '../../utils/format';
 
-export function Ball({ num, size = 'md', delay = 0 }: { num: number; size?: 'sm' | 'md' | 'responsive'; delay?: number }) {
+export function Ball({ num, size = 'md', delay = 0 }: { num: number; size?: 'sm' | 'md' | 'responsive' | 'compact'; delay?: number }) {
     const t = getBallTheme(num);
     const dimensions = size === 'sm'
         ? { width: 38, height: 38, fontSize: 14 }
         : size === 'responsive'
             ? { width: 'clamp(38px, 8.4vw, 54px)', height: 'clamp(38px, 8.4vw, 54px)', fontSize: 'clamp(14px, 3.7vw, 19px)' }
-            : { width: 54, height: 54, fontSize: 19 };
+            : size === 'compact'
+                // 구매 기록처럼 한 행에 볼 6개 + 배지가 함께 들어가는 좁은 컨테이너 전용: 390px 뷰포트에서도 한 줄 유지
+                ? { width: 'clamp(28px, 7.5vw, 38px)', height: 'clamp(28px, 7.5vw, 38px)', fontSize: 'clamp(11px, 3.2vw, 14px)' }
+                : { width: 54, height: 54, fontSize: 19 };
 
     return (
         /* 동행복권 공식 스타일: 단색 채움 + 흰 숫자, 테두리·하드 섀도우 없음 */
