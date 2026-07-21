@@ -70,15 +70,13 @@ export function createLottoRoutes() {
     }))
 
   app.get('/purchases', withRouteErrorHandling(async (c) => {
-      const deviceId = c.req.query('deviceId') ?? ''
-      return c.json(await listPurchaseTickets(c.env.DB, deviceId))
+      return c.json(await listPurchaseTickets(c.env.DB))
     }, {
       errorStatus: (_error, message) => PURCHASE_VALIDATION_ERRORS.includes(message) ? 400 : 500,
     }))
 
   app.delete('/purchases/:ticketId', withRouteErrorHandling(async (c) => {
-      const deviceId = c.req.query('deviceId') ?? ''
-      const removed = await deletePurchaseTicket(c.env.DB, c.req.param('ticketId'), deviceId)
+      const removed = await deletePurchaseTicket(c.env.DB, c.req.param('ticketId'))
       if (!removed) return notFound(c, '해당 구매 기록이 없습니다.')
       return c.json({ success: true })
     }, {

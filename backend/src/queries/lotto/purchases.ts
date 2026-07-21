@@ -19,20 +19,19 @@ export async function insertPurchaseGamesQuery(db: D1Database, params: InsertPur
   )))
 }
 
-export async function getPurchasesWithResultsQuery(db: D1Database, deviceId: string) {
+export async function getPurchasesWithResultsQuery(db: D1Database) {
   const { results } = await db.prepare(
     `SELECT p.*, h.drwNoDate, h.drwtNo1, h.drwtNo2, h.drwtNo3, h.drwtNo4, h.drwtNo5, h.drwtNo6, h.bnusNo
      FROM lotto_purchases p
      LEFT JOIN lotto_history h ON h.drwNo = p.draw_no
-     WHERE p.device_id = ?
      ORDER BY p.draw_no DESC, p.created_at DESC, p.game_index ASC`
-  ).bind(deviceId).all<PurchaseJoinedRow>()
+  ).all<PurchaseJoinedRow>()
   return results
 }
 
-export async function deletePurchaseTicketQuery(db: D1Database, ticketId: string, deviceId: string) {
+export async function deletePurchaseTicketQuery(db: D1Database, ticketId: string) {
   const result = await db.prepare(
-    'DELETE FROM lotto_purchases WHERE ticket_id = ? AND device_id = ?'
-  ).bind(ticketId, deviceId).run()
+    'DELETE FROM lotto_purchases WHERE ticket_id = ?'
+  ).bind(ticketId).run()
   return result.meta.changes ?? 0
 }

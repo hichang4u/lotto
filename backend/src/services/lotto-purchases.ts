@@ -127,10 +127,8 @@ function toGameResult(row: PurchaseJoinedRow): PurchaseGameResult {
   }
 }
 
-export async function listPurchaseTickets(db: D1Database, deviceId: string): Promise<PurchaseListSummary> {
-  if (!deviceId) throw new Error(ERROR_DEVICE_REQUIRED)
-
-  const rows = await getPurchasesWithResultsQuery(db, deviceId)
+export async function listPurchaseTickets(db: D1Database): Promise<PurchaseListSummary> {
+  const rows = await getPurchasesWithResultsQuery(db)
   const tickets: PurchaseTicket[] = []
   const byTicket = new Map<string, PurchaseTicket>()
 
@@ -163,8 +161,7 @@ export async function listPurchaseTickets(db: D1Database, deviceId: string): Pro
   return { tickets }
 }
 
-export async function deletePurchaseTicket(db: D1Database, ticketId: string, deviceId: string) {
-  if (!deviceId) throw new Error(ERROR_DEVICE_REQUIRED)
-  const deleted = await deletePurchaseTicketQuery(db, ticketId, deviceId)
+export async function deletePurchaseTicket(db: D1Database, ticketId: string) {
+  const deleted = await deletePurchaseTicketQuery(db, ticketId)
   return deleted > 0
 }

@@ -35,7 +35,7 @@ export function usePurchases() {
     const loadPurchases = async (): Promise<PurchaseTicket[]> => {
         setPurchasesLoading(true);
         try {
-            const res = await fetch(`${API_URL}/api/purchases?deviceId=${encodeURIComponent(getDeviceId())}`);
+            const res = await fetch(`${API_URL}/api/purchases`);
             if (!res.ok) return tickets;
             const data = (await res.json()) as { tickets?: PurchaseTicket[] };
             const next = Array.isArray(data.tickets) ? data.tickets : [];
@@ -79,7 +79,7 @@ export function usePurchases() {
     const deleteTicket = async (ticketId: string) => {
         try {
             const res = await fetch(
-                `${API_URL}/api/purchases/${ticketId}?deviceId=${encodeURIComponent(getDeviceId())}`,
+                `${API_URL}/api/purchases/${ticketId}`,
                 { method: 'DELETE' },
             );
             if (!res.ok) return false;
