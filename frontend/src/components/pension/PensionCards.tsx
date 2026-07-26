@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { PensionRecommendationSet, PensionRulePerformance } from '../../types';
 import { PENSION_RULE_LABELS } from '../../constants';
 import { PensionDigitBall } from './PensionNumberDisplay';
@@ -64,7 +65,13 @@ export function PensionRecommendationCard({ set }: { set: PensionRecommendationS
     );
 }
 
-export function FeaturedPensionRecommendationCard({ set }: { set: PensionRecommendationSet }) {
+export function FeaturedPensionRecommendationCard({
+    set,
+    action,
+}: {
+    set: PensionRecommendationSet;
+    action?: ReactNode;
+}) {
     const ruleName = set.meta.ruleId ? (PENSION_RULE_LABELS[set.meta.ruleId] ?? set.meta.ruleId) : null;
 
     return (
@@ -97,13 +104,16 @@ export function FeaturedPensionRecommendationCard({ set }: { set: PensionRecomme
                 </div>
 
                 {/* 내측 숫자 볼 영역 — 한 줄(nowrap) 유지 */}
-                <div className="border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[2px_2px_0px_0px_#000000]">
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-2.5">
-                        <div className="shrink-0 px-1 text-sm font-black text-black sm:text-base">각조</div>
-                        {set.number.split('').map((digit, index) => (
-                            <PensionDigitBall key={`featured-${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} size="sm" />
-                        ))}
+                <div className="flex flex-col items-stretch gap-3">
+                    <div className="border-2 border-black bg-white rounded-xl px-4 py-4 shadow-[2px_2px_0px_0px_#000000]">
+                        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5">
+                            <div className="shrink-0 px-1 text-sm font-black text-black sm:text-base">각조</div>
+                            {set.number.split('').map((digit, index) => (
+                                <PensionDigitBall key={`featured-${set.label}-${index}`} value={digit} color={RECOMMENDATION_COLORS[index]} size="sm" />
+                            ))}
+                        </div>
                     </div>
+                    {action}
                 </div>
             </div>
 

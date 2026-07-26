@@ -165,4 +165,32 @@ export type SyncResponse = {
     latestDraw: number;
 };
 
+export type PensionPurchaseGameResult = {
+    gameIndex: number;
+    number: string;
+    ruleId: string | null;
+    label: string | null;
+    ruleWeight: number | null;
+    suffixMatches: number | null;
+    prizeCounts: Record<number, number> | null;
+    bonusMatched: boolean | null;
+    topRank: number | null;
+};
+
+export type PensionPurchaseTicket = {
+    ticketId: string;
+    drawNo: number;
+    algorithm: string | null;
+    createdAt: string;
+    status: 'pending' | 'judged';
+    draw: {
+        drawNo: number;
+        winningBand: string;
+        winningNumber: string;
+        bonusNumber: string;
+        drawDate: string;
+    } | null;
+    games: PensionPurchaseGameResult[];
+};
+
 export type PageKey = 'lotto' | 'pension';

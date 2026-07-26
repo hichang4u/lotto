@@ -1,10 +1,14 @@
-import { Info, Search, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Info, Search, Sparkles, Ticket } from 'lucide-react';
 import { formatDateTime } from '../../utils/format';
 import { usePensionPage } from '../../hooks/usePensionPage';
+import { usePensionPurchases, summarizePensionTicketResult } from '../../hooks/usePensionPurchases';
 import { PENSION_RULE_LABELS } from '../../constants';
 import { SectionCard } from '../ui/SectionCard';
 import { RuleWeightCard } from '../lotto/RuleCards';
 import { PensionResultCard } from './PensionResultCard';
+import { PensionPurchaseTicketModal } from './PensionPurchaseTicketModal';
+import { PensionPurchaseHistorySection } from './PensionPurchaseHistorySection';
 import {
     FeaturedPensionRecommendationCard,
     PensionRecommendationCard,
@@ -45,6 +49,8 @@ export function PensionPage({
         pensionRuleWeights,
         pensionBacktestDiagnostics,
         pensionBacktestLoading,
+        pensionAlgorithm,
+        maxDrawNo,
         pensionSearchInput,
         pensionSearchError,
         isLatest,
@@ -64,11 +70,65 @@ export function PensionPage({
 
     const featuredRecommendation = pensionRecommendations[0] ?? null;
 
-    const handleSync = () => syncLatestPensionResults(onSyncMessage, onSyncError);
+    const {
+        tickets,
+        purchasesLoading,
+        saving,
+        loadPurchases,
+        savePurchase,
+        deleteTicket,
+        refreshAfterSync,
+    } = usePensionPurchases();
+    const [showTicketModal, setShowTicketModal] = useState(false);
+    const targetDrawNo = maxDrawNo + 1;
+
+    useEffect(() => {
+        loadPurchases();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleSavePurchase = async () => {
+        if (!featuredRecommendation) return;
+        if (!window.confirm(`제 ${targetDrawNo}회 추첨 대상으로 이 번호를 각조 구매로 저장할까요?`)) return;
+        const result = await savePurchase(pensionAlgorithm, [featuredRecommendation]);
+        if (result) {
+            onSyncMessage(`구매번호 저장 완료 (제 ${result.drawNo}회)`);
+            setShowTicketModal(false);
+        } else {
+            onSyncError('구매번호 저장에 실패했습니다.');
+        }
+    };
+
+    const handleDeleteTicket = async (ticketId: string) => {
+        if (!window.confirm('이 구매 기록을 삭제할까요?')) return;
+        const ok = await deleteTicket(ticketId);
+        if (!ok) onSyncError('구매 기록 삭제에 실패했습니다.');
+    };
+
+    const handleSync = () => syncLatestPensionResults(
+        async (msg) => {
+            onSyncMessage(msg);
+            // 동기화로 새 회차가 들어왔다면 pending 티켓이 판정됐는지 확인해 알림
+            const newlyJudged = await refreshAfterSync();
+            if (newlyJudged.length > 0) {
+                onSyncMessage(newlyJudged.map(summarizePensionTicketResult).join(' / '));
+            }
+        },
+        onSyncError,
+    );
 
     return (
         /* 전역 여백 확보를 위한 space-y-10 sm:space-y-12 설정 */
         <div className="space-y-10 sm:space-y-12">
+            {showTicketModal && featuredRecommendation && (
+                <PensionPurchaseTicketModal
+                    set={featuredRecommendation}
+                    targetDrawNo={targetDrawNo}
+                    saving={saving}
+                    onSave={handleSavePurchase}
+                    onClose={() => setShowTicketModal(false)}
+                />
+            )}
             {/* 회차별 당첨번호 섹션 */}
             <section className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -177,7 +237,19 @@ export function PensionPage({
                     {/* 대표 1세트 추천 레이아웃 */}
                     {featuredRecommendation && (
                         <div className="mb-4">
-                            <FeaturedPensionRecommendationCard set={featuredRecommendation} />
+                            <FeaturedPensionRecommendationCard
+                                set={featuredRecommendation}
+                                action={
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTicketModal(true)}
+                                        disabled={maxDrawNo === 0}
+                                        className="neo-btn neo-btn-purple inline-flex h-11 w-full items-center justify-center px-6 text-sm font-black disabled:opacity-60"
+                                    >
+                                        이 번호로 구매
+                                    </button>
+                                }
+                            />
                         </div>
                     )}
 
@@ -300,6 +372,24 @@ export function PensionPage({
                             {pensionBacktestLoading ? '연금복권 백테스트 진단을 계산하고 있습니다.' : '연금복권 백테스트 진단 데이터를 불러오지 못했습니다.'}
                         </div>
                     )}
+                </SectionCard>
+            </section>
+
+            {/* 내 구매 기록 섹션 */}
+            <section>
+                <SectionCard
+                    title="내 구매 기록"
+                    eyebrow="구매번호 관리"
+                    icon={<Ticket className="h-5 w-5" />}
+                >
+                    <p className="mb-4 text-sm font-bold text-slate-700">
+                        저장한 번호는 1~5조 전부(각조 5매) 구매로 판정되며, 당첨번호 동기화 시 자동으로 확인됩니다.
+                    </p>
+                    <PensionPurchaseHistorySection
+                        tickets={tickets}
+                        loading={purchasesLoading}
+                        onDelete={handleDeleteTicket}
+                    />
                 </SectionCard>
             </section>
         </div>

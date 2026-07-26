@@ -1,6 +1,7 @@
 import {
   buildPensionRecommendations,
   buildPensionRuleWeights,
+  longestSuffixMatch,
   PENSION_ALGORITHM_VERSION,
 } from '../algorithms/pension'
 import { createSeededRng } from '../algorithms/statistics'
@@ -10,20 +11,6 @@ import type { PensionBacktestSummary } from '../types/pension/summaries'
 
 const MIN_PENSION_BACKTEST_DRAWS = 30
 const MIN_PENSION_TRAINING_DRAWS = 20
-
-// 연금복권720+ 상금은 "뒤에서부터 연속 일치"로 결정된다 (끝 1자리=7등 … 6자리 전체=2등, 조까지=1등)
-export function longestSuffixMatch(picked: string, winning: string) {
-  const left = picked.padStart(6, '0').slice(-6)
-  const right = winning.padStart(6, '0').slice(-6)
-
-  let matches = 0
-  for (let index = 5; index >= 0; index -= 1) {
-    if (left[index] !== right[index]) break
-    matches += 1
-  }
-
-  return matches
-}
 
 function emptyPrizeCounts(): Record<number, number> {
   return { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }

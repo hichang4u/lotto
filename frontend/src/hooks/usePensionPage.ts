@@ -21,6 +21,7 @@ export function usePensionPage() {
     const [pensionRuleWeights, setPensionRuleWeights] = useState<PensionRuleWeight[]>([]);
     const [pensionBacktestDiagnostics, setPensionBacktestDiagnostics] = useState<PensionBacktestDiagnostics | null>(null);
     const [pensionBacktestLoading, setPensionBacktestLoading] = useState(false);
+    const [pensionAlgorithm, setPensionAlgorithm] = useState<string | null>(null);
     const [pensionSearchInput, setPensionSearchInput] = useState('');
     const [pensionSearchError, setPensionSearchError] = useState('');
     
@@ -122,15 +123,18 @@ export function usePensionPage() {
         setPensionGenerateLoading(true);
         setPensionRecommendations([]);
         setPensionRuleWeights([]);
+        setPensionAlgorithm(null);
         try {
             const res = await fetch(`${API_URL}/api/pension/generate`, { method: 'POST' });
             if (!res.ok) throw new Error();
             const data = await res.json();
             setPensionRecommendations(Array.isArray(data.sets) ? data.sets : []);
             setPensionRuleWeights(Array.isArray(data.ruleWeights) ? data.ruleWeights : []);
+            setPensionAlgorithm(typeof data.algorithm === 'string' ? data.algorithm : null);
         } catch {
             setPensionRecommendations([]);
             setPensionRuleWeights([]);
+            setPensionAlgorithm(null);
         } finally {
             setPensionGenerateLoading(false);
         }
@@ -252,6 +256,8 @@ export function usePensionPage() {
         pensionRuleWeights,
         pensionBacktestDiagnostics,
         pensionBacktestLoading,
+        pensionAlgorithm,
+        maxDrawNo,
         pensionSearchInput,
         pensionSearchError,
         isLatest,
