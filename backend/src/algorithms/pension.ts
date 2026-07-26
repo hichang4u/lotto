@@ -343,3 +343,34 @@ export function buildPensionRecommendations(historyNumbers: string[] = [], rng: 
     })
     .filter((set): set is PensionRecommendationSet => set !== null)
 }
+
+// 각조 구매 = 1~5조 전부 구매. 번호 하나당 5매를 보유한 것으로 판정한다.
+export const PENSION_BANDS_PER_TICKET = 5
+
+// 연금복권720+ 상금은 "뒤에서부터 연속 일치"로 결정된다 (끝 1자리=7등 … 6자리 전체=2등, 조까지=1등)
+export function longestSuffixMatch(picked: string, winning: string) {
+  const left = picked.padStart(6, '0').slice(-6)
+  const right = winning.padStart(6, '0').slice(-6)
+
+  let matches = 0
+  for (let index = 5; index >= 0; index -= 1) {
+    if (left[index] !== right[index]) break
+    matches += 1
+  }
+
+  return matches
+}
+
+// 각조(5매) 기준 등수별 당첨 매수.
+// 6자리 전장 일치면 당첨 조 1매가 1등, 나머지 4조가 2등. 1~5자리는 조와 무관하므로 5매 모두 당첨.
+export function getPensionPrizeCounts(suffixMatches: number): Record<number, number> {
+  if (suffixMatches >= 6) return { 1: 1, 2: PENSION_BANDS_PER_TICKET - 1 }
+  if (suffixMatches >= 1) return { [8 - suffixMatches]: PENSION_BANDS_PER_TICKET }
+  return {}
+}
+
+// 가장 높은 등수(숫자가 작을수록 높음). 낙첨이면 0.
+export function getPensionTopRank(prizeCounts: Record<number, number>) {
+  const ranks = Object.keys(prizeCounts).map(Number)
+  return ranks.length === 0 ? 0 : Math.min(...ranks)
+}

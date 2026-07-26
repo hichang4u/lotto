@@ -6,3 +6,9 @@ export {
   getPensionResultByDrawNoQuery,
   getRecentPensionWinningNumbersQuery,
 } from './results'
+
+export {
+  deletePensionPurchaseTicketQuery,
+  getPensionPurchasesWithResultsQuery,
+  insertPensionPurchaseGamesQuery,
+} from './purchases'

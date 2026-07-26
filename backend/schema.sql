@@ -48,3 +48,19 @@ CREATE TABLE IF NOT EXISTS lotto_purchases (
 );
 
 CREATE INDEX IF NOT EXISTS idx_purchases_device ON lotto_purchases(device_id, draw_no);
+
+CREATE TABLE IF NOT EXISTS pension_purchases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id TEXT NOT NULL,
+  device_id TEXT NOT NULL,
+  draw_no INTEGER NOT NULL,
+  game_index INTEGER NOT NULL,
+  number TEXT NOT NULL,
+  rule_id TEXT,
+  label TEXT,
+  algorithm TEXT,
+  rule_weight REAL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pension_purchases_device ON pension_purchases(device_id, draw_no);
