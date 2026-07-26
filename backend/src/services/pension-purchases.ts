@@ -19,7 +19,8 @@ import type {
   SavePensionPurchaseSummary,
 } from '../types/pension'
 
-const PENSION_GAMES_PER_TICKET = 4
+// 각조 구매는 회차당 한도 5매를 모두 소진하므로 티켓당 번호는 하나뿐이다.
+const PENSION_GAMES_PER_TICKET = 1
 
 const ERROR_DEVICE_REQUIRED = 'deviceId가 필요합니다.'
 const ERROR_GAME_COUNT = `게임은 정확히 ${PENSION_GAMES_PER_TICKET}개여야 합니다.`
