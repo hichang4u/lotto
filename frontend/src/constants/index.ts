@@ -16,6 +16,9 @@ export const LOTTO_RULE_LABELS: Record<string, string> = {
     'tail-balance': '끝수 균형형',
 };
 
+// 각조 구매 = 1~5조 전부. 번호 하나당 5매.
+export const PENSION_BANDS_PER_TICKET = 5;
+
 export const PENSION_RULE_LABELS: Record<string, string> = {
     'balanced-core': '균형형 추천',
     'odd-focus': '홀수 집중형 추천',
