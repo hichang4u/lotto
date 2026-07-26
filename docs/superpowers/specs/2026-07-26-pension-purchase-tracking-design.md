@@ -235,9 +235,10 @@ CREATE INDEX IF NOT EXISTS idx_pension_purchases_device ON pension_purchases(dev
 
 ### UI 플로우
 
-1. **구매 버튼**: 추천 세트가 생성된 상태에서만 추천 섹션 하단에 "이 번호로 구매" 표시.
+1. **구매 버튼**: **대표 추천 카드(`FeaturedPensionRecommendationCard`) 안**에 "이 번호로 구매"를 둔다.
+   저장 대상이 대표 1세트뿐이므로 버튼도 그 카드에 붙어 있어야 대상이 분명해진다
+   (섹션 하단에 두면 A~D 전체를 저장하는 것처럼 읽힌다).
    최신 회차를 아직 못 불러온 상태(`maxDrawNo === 0`)면 비활성.
-   저장 대상은 **대표 추천 1세트**(`pensionRecommendations[0]`)다.
 2. **티켓 모달**: 대표 1세트를 `1조`~`5조` 5줄로 전개. 헤더에 `제 N회 추첨` + `각조 구매` 배지,
    각 줄은 조 라벨 + `PensionDigitBall` 6개(5줄 모두 같은 번호).
    하단에 "1번호 × 각조 5매 = 5,000원" 안내와 성향 라벨. 네오 브루탈리즘 스타일 유지.
