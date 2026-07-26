@@ -88,8 +88,9 @@ export function PensionPage({
     }, []);
 
     const handleSavePurchase = async () => {
-        if (!window.confirm(`제 ${targetDrawNo}회 추첨 대상으로 ${pensionRecommendations.length}세트를 각조 구매로 저장할까요?`)) return;
-        const result = await savePurchase(pensionAlgorithm, pensionRecommendations);
+        if (!featuredRecommendation) return;
+        if (!window.confirm(`제 ${targetDrawNo}회 추첨 대상으로 이 번호를 각조 구매로 저장할까요?`)) return;
+        const result = await savePurchase(pensionAlgorithm, [featuredRecommendation]);
         if (result) {
             onSyncMessage(`구매번호 저장 완료 (제 ${result.drawNo}회)`);
             setShowTicketModal(false);
@@ -119,9 +120,9 @@ export function PensionPage({
     return (
         /* 전역 여백 확보를 위한 space-y-10 sm:space-y-12 설정 */
         <div className="space-y-10 sm:space-y-12">
-            {showTicketModal && (
+            {showTicketModal && featuredRecommendation && (
                 <PensionPurchaseTicketModal
-                    sets={pensionRecommendations}
+                    set={featuredRecommendation}
                     targetDrawNo={targetDrawNo}
                     saving={saving}
                     onSave={handleSavePurchase}
@@ -236,7 +237,19 @@ export function PensionPage({
                     {/* 대표 1세트 추천 레이아웃 */}
                     {featuredRecommendation && (
                         <div className="mb-4">
-                            <FeaturedPensionRecommendationCard set={featuredRecommendation} />
+                            <FeaturedPensionRecommendationCard
+                                set={featuredRecommendation}
+                                action={
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTicketModal(true)}
+                                        disabled={maxDrawNo === 0}
+                                        className="neo-btn neo-btn-purple inline-flex h-11 w-full items-center justify-center px-6 text-sm font-black disabled:opacity-60"
+                                    >
+                                        이 번호로 구매
+                                    </button>
+                                }
+                            />
                         </div>
                     )}
 
@@ -250,19 +263,6 @@ export function PensionPage({
                     ) : (
                         <div className="border-2 border-dashed border-slate-300 bg-white/70 rounded-xl px-4 py-8 text-center text-sm font-bold text-slate-700 shadow-[2px_2px_0px_0px_#000]">
                             버튼을 눌러 연금복권 추천번호 세트를 생성해 보세요.
-                        </div>
-                    )}
-
-                    {pensionRecommendations.length > 0 && (
-                        <div className="mt-5 flex justify-center">
-                            <button
-                                type="button"
-                                onClick={() => setShowTicketModal(true)}
-                                disabled={maxDrawNo === 0}
-                                className="neo-btn neo-btn-secondary inline-flex h-11 px-6 text-sm font-black disabled:opacity-60"
-                            >
-                                이 번호로 구매
-                            </button>
                         </div>
                     )}
                 </SectionCard>

@@ -1,28 +1,28 @@
 import { X } from 'lucide-react';
 import type { PensionRecommendationSet } from '../../types';
 import { PENSION_BANDS_PER_TICKET, PENSION_RULE_LABELS } from '../../constants';
+import { PENSION_BAND_NUMBERS, PENSION_DIGIT_COLORS, toSixDigits } from '../../utils/pension-bands';
 import { PensionDigitBall } from './PensionNumberDisplay';
 
-const GAME_LETTERS = ['A', 'B', 'C', 'D'];
-// 추천 카드와 동일한 자리별 링 색상 (1~6자리)
-const DIGIT_COLORS = ['#e2502b', '#f07e26', '#f2c024', '#3379e3', '#9a6bd0', '#9aa3ad'];
 const PRICE_PER_BAND = 1000;
 
-// 연금복권 구매용지처럼 A~D 4세트를 한 장으로 보여주는 모달
+// 각조 구매 용지처럼 대표 1세트를 1조~5조 5줄로 펼쳐 보여주는 모달
 export function PensionPurchaseTicketModal({
-    sets,
+    set,
     targetDrawNo,
     saving,
     onSave,
     onClose,
 }: {
-    sets: PensionRecommendationSet[];
+    set: PensionRecommendationSet;
     targetDrawNo: number;
     saving: boolean;
     onSave: () => void;
     onClose: () => void;
 }) {
-    const totalPrice = sets.length * PENSION_BANDS_PER_TICKET * PRICE_PER_BAND;
+    const digits = toSixDigits(set.number).split('');
+    const ruleName = set.meta?.ruleId ? (PENSION_RULE_LABELS[set.meta.ruleId] ?? set.meta.ruleId) : set.label;
+    const totalPrice = PENSION_BANDS_PER_TICKET * PRICE_PER_BAND;
 
     return (
         <div
@@ -45,9 +45,7 @@ export function PensionPurchaseTicketModal({
                         <h3 className="mt-2 text-xl font-black text-black sm:text-2xl">
                             제 {targetDrawNo}회 추첨
                         </h3>
-                        <p className="mt-1 text-xs font-bold text-slate-600">
-                            아래 {sets.length}세트가 한 장의 티켓으로 저장됩니다.
-                        </p>
+                        <p className="mt-1 text-xs font-bold text-slate-600">{ruleName}</p>
                     </div>
                     <button
                         type="button"
@@ -60,39 +58,30 @@ export function PensionPurchaseTicketModal({
                 </div>
 
                 <div className="mt-4 space-y-2.5">
-                    {sets.map((set, index) => {
-                        const ruleName = set.meta?.ruleId
-                            ? (PENSION_RULE_LABELS[set.meta.ruleId] ?? set.meta.ruleId)
-                            : set.label;
-                        return (
-                            <div
-                                key={`${set.label}-${set.number}`}
-                                className="flex items-center gap-1.5 border-2 border-black bg-white rounded-xl px-3 py-2.5 shadow-[2px_2px_0px_0px_#000000] sm:gap-2.5"
-                            >
-                                <span className="w-5 shrink-0 text-center text-base font-black text-black">
-                                    {GAME_LETTERS[index] ?? index + 1}
-                                </span>
-                                <span className="shrink-0 text-[10px] font-black text-slate-500 sm:text-xs">각조</span>
-                                <div className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5">
-                                    {set.number.padStart(6, '0').slice(-6).split('').map((digit, digitIndex) => (
-                                        <PensionDigitBall
-                                            key={`${set.label}-${digitIndex}`}
-                                            value={digit}
-                                            color={DIGIT_COLORS[digitIndex]}
-                                            size="sm"
-                                        />
-                                    ))}
-                                </div>
-                                <span className="hidden shrink-0 text-[10px] font-bold text-slate-500 sm:block">
-                                    {ruleName}
-                                </span>
+                    {PENSION_BAND_NUMBERS.map(band => (
+                        <div
+                            key={band}
+                            className="flex items-center gap-2 border-2 border-black bg-white rounded-xl px-3 py-2.5 shadow-[2px_2px_0px_0px_#000000] sm:gap-3"
+                        >
+                            <span className="w-9 shrink-0 text-center text-sm font-black text-black">
+                                {band}조
+                            </span>
+                            <div className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5">
+                                {digits.map((digit, digitIndex) => (
+                                    <PensionDigitBall
+                                        key={`${band}-${digitIndex}`}
+                                        value={digit}
+                                        color={PENSION_DIGIT_COLORS[digitIndex]}
+                                        size="sm"
+                                    />
+                                ))}
                             </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </div>
 
                 <p className="mt-3 text-center text-[11px] font-bold text-slate-600">
-                    {sets.length}번호 × 각조 {PENSION_BANDS_PER_TICKET}매 = {totalPrice.toLocaleString('ko-KR')}원
+                    1번호 × 각조 {PENSION_BANDS_PER_TICKET}매 = {totalPrice.toLocaleString('ko-KR')}원
                 </p>
 
                 <div className="mt-5 flex items-center justify-end gap-2 border-t-2 border-black pt-4">
