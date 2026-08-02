@@ -22,8 +22,13 @@ export function PensionRecommendationCard({ set }: { set: PensionRecommendationS
                 </h3>
                 
                 {/* 하위 규칙 및 가중치 정보 표시 */}
-                {(set.meta.ruleWeight || ruleName) && (
+                {(set.meta.ruleWeight || typeof set.meta.patternScore === 'number' || ruleName) && (
                     <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+                        {typeof set.meta.patternScore === 'number' ? (
+                            <span className="neo-badge neo-badge-purple py-1 text-xs">
+                                통계 점수 {(set.meta.patternScore * 100).toFixed(1)}
+                            </span>
+                        ) : null}
                         {set.meta.ruleWeight ? (
                             <span className="neo-badge neo-badge-blue py-1 text-xs">
                                 가중치 {set.meta.ruleWeight.toFixed(3)}
@@ -87,9 +92,14 @@ export function FeaturedPensionRecommendationCard({
                         {set.label}
                     </h3>
                     <p className="mt-2 text-sm font-bold text-slate-700">
-                        현재 추천 성향 우선순위에서 가장 먼저 선택된 대표 조합입니다.
+                        생성된 4개 번호 중 과거 당첨번호 패턴 통계 점수가 가장 높은 조합입니다.
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {typeof set.meta.patternScore === 'number' ? (
+                            <span className="neo-badge neo-badge-yellow py-1 text-xs">
+                                통계 점수 {(set.meta.patternScore * 100).toFixed(1)}
+                            </span>
+                        ) : null}
                         {set.meta.ruleWeight ? (
                             <span className="neo-badge neo-badge-blue py-1 text-xs">
                                 가중치 {set.meta.ruleWeight.toFixed(3)}

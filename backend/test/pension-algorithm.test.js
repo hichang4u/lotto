@@ -6,6 +6,7 @@ const {
   buildPensionRecommendations,
   scorePensionCombination,
   selectBestPensionCandidate,
+  selectFeaturedPensionRecommendation,
   PENSION_ALGORITHM_VERSION,
 } = require('../test-build/algorithms/pension.js');
 const { createSeededRng, shrinkRate } = require('../test-build/algorithms/statistics.js');
@@ -37,6 +38,8 @@ describe('buildPensionRecommendations', () => {
       assert.ok(set.meta.uniqueDigitCount >= 4);
       assert.ok(set.meta.maxDuplicateCount <= 2);
       assert.strictEqual(set.meta.hasThreeConsecutive, false);
+      assert.strictEqual(typeof set.meta.patternScore, 'number');
+      assert.ok(set.meta.patternScore >= 0 && set.meta.patternScore <= 1);
       ruleIds.add(set.meta.ruleId);
       lastDigits.add(set.number[5]);
     }
@@ -61,6 +64,7 @@ describe('buildPensionRecommendations', () => {
     assert.deepStrictEqual(first, second);
     assert.strictEqual(first.length, 4);
     assert.strictEqual(new Set(first.map(set => set.number[5])).size, 4);
+    assert.ok(first.every(set => set.meta.patternScore === null));
   });
 
   it('changes generated recommendations when the learned history changes', () => {
@@ -145,8 +149,41 @@ describe('selectBestPensionCandidate', () => {
   });
 });
 
+describe('selectFeaturedPensionRecommendation', () => {
+  function recommendation(number, patternScore, ruleWeight) {
+    return {
+      label: number,
+      number,
+      meta: { patternScore, ruleWeight },
+    };
+  }
+
+  it('selects the highest statistical score across the four completed sets', () => {
+    const history = Array.from({ length: 120 }, (_, index) => String(100000 + ((index * 7919) % 900000)));
+    const sets = buildPensionRecommendations(history, createSeededRng(0));
+    const featured = selectFeaturedPensionRecommendation(sets);
+    const maxScore = Math.max(...sets.map(set => set.meta.patternScore));
+
+    assert.strictEqual(featured.meta.patternScore, maxScore);
+    assert.ok(sets.includes(featured));
+    assert.notStrictEqual(featured, sets[0]);
+  });
+
+  it('uses rule weight as the tie-breaker and otherwise preserves generation order', () => {
+    const first = recommendation('111111', 0.8, 1.1);
+    const higherWeight = recommendation('222222', 0.8, 1.2);
+    const sameTie = recommendation('333333', 0.8, 1.2);
+
+    assert.strictEqual(
+      selectFeaturedPensionRecommendation([first, higherWeight, sameTie]),
+      higherWeight,
+    );
+    assert.strictEqual(selectFeaturedPensionRecommendation([]), null);
+  });
+});
+
 describe('version', () => {
-  it('is pension-multi-set-v4.0', () => {
-    assert.strictEqual(PENSION_ALGORITHM_VERSION, 'pension-multi-set-v4.0');
+  it('is pension-multi-set-v5.0', () => {
+    assert.strictEqual(PENSION_ALGORITHM_VERSION, 'pension-multi-set-v5.0');
   });
 });

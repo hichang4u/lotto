@@ -45,6 +45,7 @@ export type PensionRecommendationSet = {
   meta: {
     ruleId?: string
     ruleWeight?: number
+    patternScore: number | null
     sum: number
     oddCount: number
     uniqueDigitCount: number

@@ -46,6 +46,7 @@ export function PensionPage({
         pensionSyncLoading,
         pensionGenerateLoading,
         pensionRecommendations,
+        pensionFeaturedRecommendation,
         pensionRuleWeights,
         pensionBacktestDiagnostics,
         pensionBacktestLoading,
@@ -68,7 +69,7 @@ export function PensionPage({
         goToNextDraw,
     } = usePensionPage();
 
-    const featuredRecommendation = pensionRecommendations[0] ?? null;
+    const featuredRecommendation = pensionFeaturedRecommendation;
 
     const {
         tickets,
@@ -328,6 +329,20 @@ export function PensionPage({
                                     <span className="text-xs font-bold text-slate-500">회차당 최소 1개 당첨률</span>
                                     <span className="font-black text-black">추천 {pensionBacktestDiagnostics.atLeastOnePrizeRate.toFixed(1)}%</span>
                                     <span>· 랜덤 {pensionBacktestDiagnostics.baseline.atLeastOnePrizeRate.toFixed(1)}%</span>
+                                </div>
+                            </div>
+
+                            {/* 대표 1세트 선발 성과 — 4세트 전체 지표와 분리 */}
+                            <div className="mt-4 border-2 border-black bg-[#fffdf5] rounded-xl px-4 py-4 shadow-[3px_3px_0px_0px_#000000]">
+                                <div className="text-xs font-bold text-slate-700">통계 점수 대표 1세트 성과</div>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-black">
+                                    <span>평균 꼬리 일치 {pensionBacktestDiagnostics.featured.averageSuffixMatchPerSet.toFixed(3)}</span>
+                                    <span>· 7등 이상 {pensionBacktestDiagnostics.featured.atLeastOnePrizeRate.toFixed(1)}%</span>
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-slate-600">
+                                    <span className="text-xs font-bold text-slate-500">랜덤 1세트</span>
+                                    <span>평균 {pensionBacktestDiagnostics.featuredBaseline.averageSuffixMatchPerSet.toFixed(3)}</span>
+                                    <span>· 7등 이상 {pensionBacktestDiagnostics.featuredBaseline.atLeastOnePrizeRate.toFixed(1)}%</span>
                                 </div>
                             </div>
 

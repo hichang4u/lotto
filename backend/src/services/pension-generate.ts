@@ -1,6 +1,7 @@
 import {
   buildPensionRuleWeights,
   buildPensionRecommendations,
+  selectFeaturedPensionRecommendation,
   PENSION_ALGORITHM_VERSION,
   PENSION_RULES,
 } from '../algorithms/pension'
@@ -12,8 +13,11 @@ export async function generatePensionSets(db: D1Database): Promise<PensionGenera
   const historyRows = await getRecentPensionWinningNumbersQuery(db, 400)
   const historyNumbers = historyRows.map((row) => row.winning_number).filter(Boolean)
 
+  const sets = buildPensionRecommendations(historyNumbers)
+
   return {
-    sets: buildPensionRecommendations(historyNumbers),
+    sets,
+    featuredSet: selectFeaturedPensionRecommendation(sets),
     algorithm: PENSION_ALGORITHM_VERSION,
     rules: PENSION_RULES,
     ruleWeights: buildPensionRuleWeights(historyNumbers),

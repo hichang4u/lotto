@@ -18,6 +18,7 @@ export function usePensionPage() {
     const [pensionSyncLoading, setPensionSyncLoading] = useState(false);
     const [pensionGenerateLoading, setPensionGenerateLoading] = useState(false);
     const [pensionRecommendations, setPensionRecommendations] = useState<PensionRecommendationSet[]>([]);
+    const [pensionFeaturedRecommendation, setPensionFeaturedRecommendation] = useState<PensionRecommendationSet | null>(null);
     const [pensionRuleWeights, setPensionRuleWeights] = useState<PensionRuleWeight[]>([]);
     const [pensionBacktestDiagnostics, setPensionBacktestDiagnostics] = useState<PensionBacktestDiagnostics | null>(null);
     const [pensionBacktestLoading, setPensionBacktestLoading] = useState(false);
@@ -122,6 +123,7 @@ export function usePensionPage() {
     const generatePensionNumbers = async () => {
         setPensionGenerateLoading(true);
         setPensionRecommendations([]);
+        setPensionFeaturedRecommendation(null);
         setPensionRuleWeights([]);
         setPensionAlgorithm(null);
         try {
@@ -129,10 +131,12 @@ export function usePensionPage() {
             if (!res.ok) throw new Error();
             const data = await res.json();
             setPensionRecommendations(Array.isArray(data.sets) ? data.sets : []);
+            setPensionFeaturedRecommendation(data.featuredSet && typeof data.featuredSet === 'object' ? data.featuredSet : null);
             setPensionRuleWeights(Array.isArray(data.ruleWeights) ? data.ruleWeights : []);
             setPensionAlgorithm(typeof data.algorithm === 'string' ? data.algorithm : null);
         } catch {
             setPensionRecommendations([]);
+            setPensionFeaturedRecommendation(null);
             setPensionRuleWeights([]);
             setPensionAlgorithm(null);
         } finally {
@@ -253,6 +257,7 @@ export function usePensionPage() {
         pensionSyncLoading,
         pensionGenerateLoading,
         pensionRecommendations,
+        pensionFeaturedRecommendation,
         pensionRuleWeights,
         pensionBacktestDiagnostics,
         pensionBacktestLoading,

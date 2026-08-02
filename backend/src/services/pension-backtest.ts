@@ -3,6 +3,7 @@ import {
   buildPensionRuleWeights,
   longestSuffixMatch,
   PENSION_ALGORITHM_VERSION,
+  selectFeaturedPensionRecommendation,
 } from '../algorithms/pension'
 import { createSeededRng } from '../algorithms/statistics'
 import { getAllPensionBacktestRowsQuery } from '../queries/pension/results'
@@ -31,10 +32,19 @@ export function runPensionBacktest(rows: PensionBacktestRow[], lookback: number)
   let drawsWithPrize = 0
   const prizeCounts = emptyPrizeCounts()
 
+  let featuredSets = 0
+  let featuredSuffixMatches = 0
+  let featuredDrawsWithPrize = 0
+  const featuredPrizeCounts = emptyPrizeCounts()
+
   let baselineSets = 0
   let baselineSuffixMatches = 0
   let baselineDrawsWithPrize = 0
   const baselinePrizeCounts = emptyPrizeCounts()
+  let featuredBaselineSets = 0
+  let featuredBaselineSuffixMatches = 0
+  let featuredBaselineDrawsWithPrize = 0
+  const featuredBaselinePrizeCounts = emptyPrizeCounts()
 
   const rulePerf = new Map<string, {
     ruleId: string
@@ -53,6 +63,7 @@ export function runPensionBacktest(rows: PensionBacktestRow[], lookback: number)
     const rng = createSeededRng(0x9e3779b9 ^ target.draw_no)
 
     const sets = buildPensionRecommendations(historyNumbers, rng)
+    const featuredSet = selectFeaturedPensionRecommendation(sets)
     const matchCounts = sets.map((set) => longestSuffixMatch(set.number, target.winning_number))
     const bestMatch = Math.max(...matchCounts)
 
@@ -83,6 +94,16 @@ export function runPensionBacktest(rows: PensionBacktestRow[], lookback: number)
     bestSuffixMatchSum += bestMatch
     if (bestMatch >= 1) drawsWithPrize += 1
 
+    if (featuredSet) {
+      const featuredMatches = longestSuffixMatch(featuredSet.number, target.winning_number)
+      featuredSets += 1
+      featuredSuffixMatches += featuredMatches
+      if (featuredMatches >= 1) {
+        featuredDrawsWithPrize += 1
+        featuredPrizeCounts[featuredMatches] += 1
+      }
+    }
+
     // 랜덤 대조군: 같은 회차에 같은 개수의 순수 랜덤 세트를 같은 RNG 흐름으로 생성
     let baselineBestMatch = 0
     for (let index = 0; index < sets.length; index += 1) {
@@ -92,6 +113,14 @@ export function runPensionBacktest(rows: PensionBacktestRow[], lookback: number)
       baselineSuffixMatches += matches
       if (matches > baselineBestMatch) baselineBestMatch = matches
       if (matches >= 1) baselinePrizeCounts[matches] += 1
+      if (index === 0) {
+        featuredBaselineSets += 1
+        featuredBaselineSuffixMatches += matches
+        if (matches >= 1) {
+          featuredBaselineDrawsWithPrize += 1
+          featuredBaselinePrizeCounts[matches] += 1
+        }
+      }
     }
     if (baselineBestMatch >= 1) baselineDrawsWithPrize += 1
   }
@@ -106,6 +135,18 @@ export function runPensionBacktest(rows: PensionBacktestRow[], lookback: number)
     // 회차당 최소 1개 당첨률(%) — 끝자리 다양화의 효과가 드러나는 핵심 지표
     atLeastOnePrizeRate: Number((drawsWithPrize / targetRows.length * 100).toFixed(2)),
     prizeCounts,
+    featured: {
+      totalSets: featuredSets,
+      averageSuffixMatchPerSet: Number((featuredSuffixMatches / Math.max(featuredSets, 1)).toFixed(3)),
+      atLeastOnePrizeRate: Number((featuredDrawsWithPrize / Math.max(featuredSets, 1) * 100).toFixed(2)),
+      prizeCounts: featuredPrizeCounts,
+    },
+    featuredBaseline: {
+      totalSets: featuredBaselineSets,
+      averageSuffixMatchPerSet: Number((featuredBaselineSuffixMatches / Math.max(featuredBaselineSets, 1)).toFixed(3)),
+      atLeastOnePrizeRate: Number((featuredBaselineDrawsWithPrize / Math.max(featuredBaselineSets, 1) * 100).toFixed(2)),
+      prizeCounts: featuredBaselinePrizeCounts,
+    },
     baseline: {
       totalSets: baselineSets,
       averageSuffixMatchPerSet: Number((baselineSuffixMatches / Math.max(baselineSets, 1)).toFixed(3)),

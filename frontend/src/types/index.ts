@@ -30,6 +30,7 @@ export type PensionRecommendationSet = {
     meta: {
         ruleId?: string;
         ruleWeight?: number;
+        patternScore: number | null;
         sum: number;
         oddCount: number;
         uniqueDigitCount: number;
@@ -65,6 +66,18 @@ export type PensionBacktestDiagnostics = {
     averageBestSuffixMatchPerDraw: number;
     atLeastOnePrizeRate: number;
     prizeCounts: Record<number, number>;
+    featured: {
+        totalSets: number;
+        averageSuffixMatchPerSet: number;
+        atLeastOnePrizeRate: number;
+        prizeCounts: Record<number, number>;
+    };
+    featuredBaseline: {
+        totalSets: number;
+        averageSuffixMatchPerSet: number;
+        atLeastOnePrizeRate: number;
+        prizeCounts: Record<number, number>;
+    };
     baseline: {
         totalSets: number;
         averageSuffixMatchPerSet: number;

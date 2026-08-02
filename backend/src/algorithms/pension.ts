@@ -19,7 +19,7 @@ export type PensionRuleWeightDiagnostic = {
 
 type Rng = () => number
 
-export const PENSION_ALGORITHM_VERSION = 'pension-multi-set-v4.0'
+export const PENSION_ALGORITHM_VERSION = 'pension-multi-set-v5.0'
 
 export const PENSION_RULES = {
   sumRange: '22-34',
@@ -385,6 +385,7 @@ function toPensionRecommendationSet(
   config: PensionSetConfig,
   digits: number[],
   ruleWeight: number | undefined,
+  patternScore: number | null,
 ): PensionRecommendationSet {
   return {
     label: config.label,
@@ -393,8 +394,33 @@ function toPensionRecommendationSet(
       ...buildPensionMeta(digits),
       ruleId: config.id,
       ruleWeight,
+      patternScore,
     },
   }
+}
+
+// 4개 성향에서 완성된 번호를 동일한 통계 점수로 비교한다.
+// 동점이면 성향 가중치가 높은 세트를, 그마저 같으면 먼저 생성된 세트를 유지한다.
+export function selectFeaturedPensionRecommendation(sets: PensionRecommendationSet[]) {
+  let best = sets[0] ?? null
+  for (let index = 1; index < sets.length; index += 1) {
+    const candidate = sets[index]
+    if (!best) {
+      best = candidate
+      continue
+    }
+
+    const candidateScore = candidate.meta.patternScore ?? -1
+    const bestScore = best.meta.patternScore ?? -1
+    if (candidateScore > bestScore) {
+      best = candidate
+      continue
+    }
+    if (candidateScore < bestScore) continue
+
+    if ((candidate.meta.ruleWeight ?? -1) > (best.meta.ruleWeight ?? -1)) best = candidate
+  }
+  return best
 }
 
 function buildStatisticalFallback(
@@ -416,15 +442,7 @@ function buildStatisticalFallback(
     if (violatesTailConstraints(digits, options.avoidLastDigits, options.avoidLastTwo)) continue
     if (violatesPositionOverlap(digits, options.previousNumbers)) continue
 
-    return {
-      label: config.label,
-      number: digits.join(''),
-      meta: {
-        ...buildPensionMeta(digits),
-        ruleId: config.id,
-        ruleWeight,
-      },
-    }
+    return toPensionRecommendationSet(config, digits, ruleWeight, scorePensionCombination(digits, model))
   }
 
   return null
@@ -458,7 +476,12 @@ export function buildPensionRecommendation(
   }
   if (strictCandidates.length > 0) {
     const best = selectBestPensionCandidate(strictCandidates)
-    return toPensionRecommendationSet(config, best.digits, ruleWeight)
+    return toPensionRecommendationSet(
+      config,
+      best.digits,
+      ruleWeight,
+      patternModel ? best.score : null,
+    )
   }
 
   // 2단계(완화): 성향 규칙을 내려놓되 공통 규칙 + 끝자리 다양화는 유지하고 점수로 선택
@@ -476,7 +499,12 @@ export function buildPensionRecommendation(
   }
   if (relaxedCandidates.length > 0) {
     const best = selectBestPensionCandidate(relaxedCandidates)
-    return toPensionRecommendationSet(config, best.digits, ruleWeight)
+    return toPensionRecommendationSet(
+      config,
+      best.digits,
+      ruleWeight,
+      patternModel ? best.score : null,
+    )
   }
 
   // 3단계: 최근 이력의 자리별 출현 빈도 기반 통계 폴백
@@ -489,7 +517,12 @@ export function buildPensionRecommendation(
     if (!passesCommonPensionRules(digits)) continue
     if (violatesTailConstraints(digits, options.avoidLastDigits, options.avoidLastTwo)) continue
     if (violatesPositionOverlap(digits, options.previousNumbers)) continue
-    return toPensionRecommendationSet(config, digits, ruleWeight)
+    return toPensionRecommendationSet(
+      config,
+      digits,
+      ruleWeight,
+      patternModel ? scorePensionCombination(digits, patternModel) : null,
+    )
   }
 
   // 5단계(최종): 끝자리만 미사용 숫자로 강제한 무제약 랜덤 폴백
@@ -500,15 +533,12 @@ export function buildPensionRecommendation(
     fallbackDigits[5] = availableLastDigits[Math.floor(rng() * availableLastDigits.length)]
   }
 
-  return {
-    label: config.label,
-    number: fallbackDigits.join(''),
-    meta: {
-      ...buildPensionMeta(fallbackDigits),
-      ruleId: config.id,
-      ruleWeight,
-    },
-  }
+  return toPensionRecommendationSet(
+    config,
+    fallbackDigits,
+    ruleWeight,
+    patternModel ? scorePensionCombination(fallbackDigits, patternModel) : null,
+  )
 }
 
 export function buildPensionRecommendations(historyNumbers: string[] = [], rng: Rng = Math.random) {
@@ -520,7 +550,7 @@ export function buildPensionRecommendations(historyNumbers: string[] = [], rng: 
   const avoidLastTwo = new Set<string>()
   const previousNumbers: string[] = []
 
-  // 진단에 표시되는 우선순위(동점 시 한글 라벨 순 포함)와 동일한 순서로 생성 → 첫 세트가 대표 추천
+  // 진단에 표시되는 성향 우선순위대로 생성하되 대표 추천은 완성된 4세트의 통계 점수로 별도 선택한다.
   return ruleWeights
     .map((entry) => {
       const config = configById.get(entry.ruleId)

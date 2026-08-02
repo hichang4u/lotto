@@ -8,6 +8,7 @@ export type Pension720SyncSummary = {
 
 export type PensionGenerateSummary = {
   sets: PensionRecommendationSet[]
+  featuredSet: PensionRecommendationSet | null
   algorithm: string
   rules: {
     sumRange: string
@@ -41,6 +42,20 @@ export type PensionBacktestSummary = {
   atLeastOnePrizeRate: number
   // 꼬리 일치 자리수(1~6) → 시뮬레이션 당첨 세트 수 (1=7등 … 6=2등 상당)
   prizeCounts: Record<number, number>
+  // 완성된 4세트 중 통계 점수가 가장 높은 대표 1세트 성과
+  featured: {
+    totalSets: number
+    averageSuffixMatchPerSet: number
+    atLeastOnePrizeRate: number
+    prizeCounts: Record<number, number>
+  }
+  // 대표 1세트와 동일한 표본 수의 순수 랜덤 대조군
+  featuredBaseline: {
+    totalSets: number
+    averageSuffixMatchPerSet: number
+    atLeastOnePrizeRate: number
+    prizeCounts: Record<number, number>
+  }
   // 같은 조건에서 순수 랜덤 세트가 낸 성적 (알고리즘 대비 기준선)
   baseline: {
     totalSets: number
