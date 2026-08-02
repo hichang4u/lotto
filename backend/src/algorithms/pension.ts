@@ -19,7 +19,7 @@ export type PensionRuleWeightDiagnostic = {
 
 type Rng = () => number
 
-export const PENSION_ALGORITHM_VERSION = 'pension-multi-set-v3.0'
+export const PENSION_ALGORITHM_VERSION = 'pension-multi-set-v4.0'
 
 export const PENSION_RULES = {
   sumRange: '22-34',
@@ -28,16 +28,49 @@ export const PENSION_RULES = {
   noThreeConsecutive: true,
   maxDuplicateCount: 2,
   setProfiles: ['균형형', '홀수 집중형', '고유수 확장형', '저합계 안정형'],
-  fallback: ['세트 규칙', '공통 규칙 완화 폴백', '통계 기반 폴백', '랜덤 폴백'],
-  portfolio: '세트 간 끝자리(7등 라인) 중복 회피',
+  fallback: ['세트 규칙', '공통 규칙 완화 폴백', '통계 기반 폴백', '제약 랜덤 폴백', '최종 랜덤 폴백'],
+  portfolio: '세트 간 끝자리(7등 라인) 및 동일 위치 숫자 중복 완화',
 }
 
 const MAX_PENSION_ATTEMPTS = 300
-const PENSION_HISTORY_LOOKBACK = 60
 // 가중치 학습: 최근 회차일수록 크게 반영하는 지수 감쇠 반감기 (약 1년치)
 const PENSION_DECAY_HALF_LIFE = 52
 // 베이지안 수축 강도: 이론 확률을 이만큼의 가상 관측으로 간주해 소표본 노이즈를 억제
 const PENSION_PRIOR_STRENGTH = 24
+
+// 자리별 숫자는 이론상 각각 1/10 확률이다. 최근 이력을 이 prior로 수축해 소표본 과적합을 줄인다.
+const PENSION_DIGIT_PRIOR = 1 / 10
+const PENSION_DIGIT_PRIOR_STRENGTH = 16
+// 특정 끝 2자리 조합의 이론 확률은 1/100이다.
+const PENSION_SUFFIX_PAIR_PRIOR = 1 / 100
+const PENSION_SUFFIX_PRIOR_STRENGTH = 24
+const PENSION_PATTERN_SHAPE_WINDOW = 100
+const PENSION_CANDIDATES_PER_STAGE = 8
+const PENSION_MAX_POSITION_OVERLAP = 3
+
+// 완성된 6자리 후보 점수 구성 요소 (합계 = 1)
+const PENSION_W_POSITION = 0.40
+const PENSION_W_SUFFIX = 0.20
+const PENSION_W_SUM = 0.15
+const PENSION_W_ODD = 0.10
+const PENSION_W_UNIQUE = 0.10
+const PENSION_W_ADJACENT_DIFF = 0.05
+const PENSION_SUM_SIGMA = 6
+const PENSION_ADJACENT_DIFF_SIGMA = 1.5
+
+export type PensionPatternModel = {
+  positionRates: number[][]
+  suffixPairRates: Float64Array
+  digitPrior: number
+  suffixPairPrior: number
+  totalDecayedWeight: number
+  shapeMed: {
+    sum: number
+    oddCount: number
+    uniqueDigitCount: number
+    averageAdjacentDifference: number
+  }
+}
 
 // 000000~999999 전수 열거로 구한 이론 확률 (scratchpad enumerate 스크립트로 산출)
 // passRate: 공통 규칙 ∧ 성향 규칙 동시 통과 확률, matchRate: 성향 규칙 단독 통과 확률
@@ -138,6 +171,120 @@ function parseHistoryDigits(historyNumbers: string[]) {
     .filter((digits) => digits.length === 6 && digits.every((digit) => Number.isFinite(digit)))
 }
 
+function median(values: number[]) {
+  const sorted = [...values].sort((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 1
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2
+}
+
+function getAverageAdjacentDifference(digits: number[]) {
+  let total = 0
+  for (let index = 1; index < digits.length; index += 1) {
+    total += Math.abs(digits[index] - digits[index - 1])
+  }
+  return total / Math.max(digits.length - 1, 1)
+}
+
+// historyNumbers는 최신 회차가 앞에 오는 배열이다. 모델은 추천 1회당 한 번만 구축해 재사용한다.
+export function buildPensionPatternModel(historyNumbers: string[]): PensionPatternModel | null {
+  const historyDigits = parseHistoryDigits(historyNumbers)
+  if (historyDigits.length === 0) return null
+
+  const positionObserved = Array.from({ length: 6 }, () => Array.from({ length: 10 }, () => 0))
+  const suffixObserved = new Float64Array(100)
+  let totalDecayedWeight = 0
+
+  historyDigits.forEach((digits, index) => {
+    const decay = Math.pow(0.5, index / PENSION_DECAY_HALF_LIFE)
+    totalDecayedWeight += decay
+    digits.forEach((digit, position) => {
+      positionObserved[position][digit] += decay
+    })
+    suffixObserved[digits[4] * 10 + digits[5]] += decay
+  })
+
+  const positionRates = positionObserved.map((observedByDigit) => observedByDigit.map((observed) => (
+    shrinkRate(observed, totalDecayedWeight, PENSION_DIGIT_PRIOR, PENSION_DIGIT_PRIOR_STRENGTH)
+  )))
+
+  const suffixPairRates = new Float64Array(100)
+  for (let suffix = 0; suffix < 100; suffix += 1) {
+    suffixPairRates[suffix] = shrinkRate(
+      suffixObserved[suffix],
+      totalDecayedWeight,
+      PENSION_SUFFIX_PAIR_PRIOR,
+      PENSION_SUFFIX_PRIOR_STRENGTH,
+    )
+  }
+
+  const shapeDigits = historyDigits.slice(0, PENSION_PATTERN_SHAPE_WINDOW)
+  return {
+    positionRates,
+    suffixPairRates,
+    digitPrior: PENSION_DIGIT_PRIOR,
+    suffixPairPrior: PENSION_SUFFIX_PAIR_PRIOR,
+    totalDecayedWeight,
+    shapeMed: {
+      sum: median(shapeDigits.map(getDigitSum)),
+      oddCount: median(shapeDigits.map(getOddDigitCount)),
+      uniqueDigitCount: median(shapeDigits.map(getUniqueDigitCount)),
+      averageAdjacentDifference: median(shapeDigits.map(getAverageAdjacentDifference)),
+    },
+  }
+}
+
+function relativeLiftScore(rate: number, prior: number, minLift: number, maxLift: number) {
+  const lift = clamp(rate / prior, minLift, maxLift)
+  return (lift - minLift) / (maxLift - minLift)
+}
+
+// 완성된 6자리 후보를 자리별 빈도, 끝 2자리, 전체 모양으로 평가한다.
+// 독립 추첨의 실제 당첨 확률을 바꾼다는 의미가 아니라 추천 조합의 통계적 우선순위다.
+export function scorePensionCombination(digits: number[], model: PensionPatternModel) {
+  let positionTotal = 0
+  for (let position = 0; position < digits.length; position += 1) {
+    positionTotal += relativeLiftScore(
+      model.positionRates[position][digits[position]],
+      model.digitPrior,
+      0.5,
+      1.5,
+    )
+  }
+  const positionScore = positionTotal / digits.length
+
+  const suffixKey = digits[4] * 10 + digits[5]
+  const suffixScore = relativeLiftScore(
+    model.suffixPairRates[suffixKey],
+    model.suffixPairPrior,
+    0.25,
+    2,
+  )
+
+  const sumDifference = getDigitSum(digits) - model.shapeMed.sum
+  const sumScore = Math.exp(-0.5 * (sumDifference / PENSION_SUM_SIGMA) ** 2)
+  const oddScore = clamp(1 - Math.abs(getOddDigitCount(digits) - model.shapeMed.oddCount) / 3, 0, 1)
+  const uniqueScore = clamp(
+    1 - Math.abs(getUniqueDigitCount(digits) - model.shapeMed.uniqueDigitCount) / 3,
+    0,
+    1,
+  )
+  const adjacentDifference = getAverageAdjacentDifference(digits) - model.shapeMed.averageAdjacentDifference
+  const adjacentScore = Math.exp(-0.5 * (adjacentDifference / PENSION_ADJACENT_DIFF_SIGMA) ** 2)
+
+  return clamp(
+    PENSION_W_POSITION * positionScore
+      + PENSION_W_SUFFIX * suffixScore
+      + PENSION_W_SUM * sumScore
+      + PENSION_W_ODD * oddScore
+      + PENSION_W_UNIQUE * uniqueScore
+      + PENSION_W_ADJACENT_DIFF * adjacentScore,
+    0,
+    1,
+  )
+}
+
 export function buildPensionRuleWeights(historyNumbers: string[]): PensionRuleWeightDiagnostic[] {
   const historyDigits = parseHistoryDigits(historyNumbers)
 
@@ -190,30 +337,30 @@ function weightedDigitPick(pool: number[], rng: Rng) {
   return pool.length - 1
 }
 
-function buildHistoricalDigitWeights(historyNumbers: string[]) {
-  const positionWeights = Array.from({ length: 6 }, () => Array.from({ length: 10 }, () => 1))
-
-  for (const raw of historyNumbers.slice(0, PENSION_HISTORY_LOOKBACK)) {
-    const digits = raw.padStart(6, '0').slice(-6).split('').map(Number)
-    if (digits.some((digit) => Number.isNaN(digit))) continue
-
-    digits.forEach((digit, index) => {
-      positionWeights[index][digit] += 1
-    })
-  }
-
-  return positionWeights
-}
-
 type PensionGenerateOptions = {
   rng?: Rng
+  patternModel?: PensionPatternModel | null
   // 포트폴리오 다양화: 이미 다른 세트가 사용한 끝자리/끝 2자리 — 겹치면 "최소 한 번 당첨" 확률이 깎이므로 회피
   avoidLastDigits?: Set<number>
   avoidLastTwo?: Set<string>
+  previousNumbers?: string[]
 }
 
 function randomDigits(rng: Rng) {
   return Array.from({ length: 6 }, () => Math.floor(rng() * 10))
+}
+
+function pickPensionDigits(model: PensionPatternModel | null, rng: Rng) {
+  if (!model) return randomDigits(rng)
+  return model.positionRates.map((weights) => weightedDigitPick(weights, rng))
+}
+
+export function selectBestPensionCandidate(candidates: { digits: number[]; score: number }[]) {
+  let best = candidates[0]
+  for (let index = 1; index < candidates.length; index += 1) {
+    if (candidates[index].score > best.score) best = candidates[index]
+  }
+  return best
 }
 
 function violatesTailConstraints(digits: number[], avoidLastDigits?: Set<number>, avoidLastTwo?: Set<string>) {
@@ -222,22 +369,52 @@ function violatesTailConstraints(digits: number[], avoidLastDigits?: Set<number>
   return false
 }
 
+function violatesPositionOverlap(digits: number[], previousNumbers?: string[]) {
+  if (!previousNumbers || previousNumbers.length === 0) return false
+  return previousNumbers.some((number) => {
+    const previousDigits = number.padStart(6, '0').slice(-6).split('').map(Number)
+    let overlap = 0
+    for (let position = 0; position < digits.length; position += 1) {
+      if (digits[position] === previousDigits[position]) overlap += 1
+    }
+    return overlap > PENSION_MAX_POSITION_OVERLAP
+  })
+}
+
+function toPensionRecommendationSet(
+  config: PensionSetConfig,
+  digits: number[],
+  ruleWeight: number | undefined,
+): PensionRecommendationSet {
+  return {
+    label: config.label,
+    number: digits.join(''),
+    meta: {
+      ...buildPensionMeta(digits),
+      ruleId: config.id,
+      ruleWeight,
+    },
+  }
+}
+
 function buildStatisticalFallback(
   config: PensionSetConfig,
   historyNumbers: string[],
   ruleWeight: number | undefined,
   options: PensionGenerateOptions,
 ): PensionRecommendationSet | null {
-  if (historyNumbers.length === 0) return null
-
   const rng = options.rng ?? Math.random
-  const positionWeights = buildHistoricalDigitWeights(historyNumbers)
+  const model = options.patternModel === undefined
+    ? buildPensionPatternModel(historyNumbers)
+    : options.patternModel
+  if (!model) return null
 
   for (let attempt = 0; attempt < MAX_PENSION_ATTEMPTS; attempt++) {
-    const digits = positionWeights.map((weights) => weightedDigitPick(weights, rng))
+    const digits = pickPensionDigits(model, rng)
     if (!passesCommonPensionRules(digits)) continue
     // 통계 폴백에서도 끝자리 중복 회피는 유지 — 시도 소진 시 4단계(미사용 끝자리 강제)로 넘어간다
     if (violatesTailConstraints(digits, options.avoidLastDigits, options.avoidLastTwo)) continue
+    if (violatesPositionOverlap(digits, options.previousNumbers)) continue
 
     return {
       label: config.label,
@@ -260,47 +437,62 @@ export function buildPensionRecommendation(
   options: PensionGenerateOptions = {},
 ): PensionRecommendationSet {
   const rng = options.rng ?? Math.random
+  const patternModel = options.patternModel === undefined
+    ? buildPensionPatternModel(historyNumbers)
+    : options.patternModel
+  const candidateTarget = patternModel ? PENSION_CANDIDATES_PER_STAGE : 1
 
-  // 1단계: 공통 규칙 + 성향 규칙 + 끝자리 다양화 모두 충족
+  // 1단계: 자리별 이력 가중 후보 중 공통 규칙 + 성향 규칙 + 끝자리 다양화를 만족하는 최고 점수 선택
+  const strictCandidates: { digits: number[]; score: number }[] = []
   for (let attempt = 0; attempt < MAX_PENSION_ATTEMPTS; attempt++) {
-    const digits = randomDigits(rng)
+    const digits = pickPensionDigits(patternModel, rng)
     if (!passesCommonPensionRules(digits)) continue
     if (!config.check(digits)) continue
     if (violatesTailConstraints(digits, options.avoidLastDigits, options.avoidLastTwo)) continue
-
-    return {
-      label: config.label,
-      number: digits.join(''),
-      meta: {
-        ...buildPensionMeta(digits),
-        ruleId: config.id,
-        ruleWeight,
-      },
-    }
+    if (violatesPositionOverlap(digits, options.previousNumbers)) continue
+    strictCandidates.push({
+      digits,
+      score: patternModel ? scorePensionCombination(digits, patternModel) : 0,
+    })
+    if (strictCandidates.length >= candidateTarget) break
+  }
+  if (strictCandidates.length > 0) {
+    const best = selectBestPensionCandidate(strictCandidates)
+    return toPensionRecommendationSet(config, best.digits, ruleWeight)
   }
 
-  // 2단계(완화): 성향 규칙을 내려놓되 공통 규칙 + 끝자리 다양화는 유지
+  // 2단계(완화): 성향 규칙을 내려놓되 공통 규칙 + 끝자리 다양화는 유지하고 점수로 선택
+  const relaxedCandidates: { digits: number[]; score: number }[] = []
   for (let attempt = 0; attempt < MAX_PENSION_ATTEMPTS; attempt++) {
-    const digits = randomDigits(rng)
+    const digits = pickPensionDigits(patternModel, rng)
     if (!passesCommonPensionRules(digits)) continue
     if (violatesTailConstraints(digits, options.avoidLastDigits, undefined)) continue
-
-    return {
-      label: config.label,
-      number: digits.join(''),
-      meta: {
-        ...buildPensionMeta(digits),
-        ruleId: config.id,
-        ruleWeight,
-      },
-    }
+    if (violatesPositionOverlap(digits, options.previousNumbers)) continue
+    relaxedCandidates.push({
+      digits,
+      score: patternModel ? scorePensionCombination(digits, patternModel) : 0,
+    })
+    if (relaxedCandidates.length >= candidateTarget) break
+  }
+  if (relaxedCandidates.length > 0) {
+    const best = selectBestPensionCandidate(relaxedCandidates)
+    return toPensionRecommendationSet(config, best.digits, ruleWeight)
   }
 
   // 3단계: 최근 이력의 자리별 출현 빈도 기반 통계 폴백
   const statisticalFallback = buildStatisticalFallback(config, historyNumbers, ruleWeight, options)
   if (statisticalFallback) return statisticalFallback
 
-  // 4단계(최종): 끝자리만 미사용 숫자로 강제한 랜덤 폴백
+  // 4단계: 통계 편향이 강해 후보가 고갈된 경우 균등 난수로 공통 규칙과 포트폴리오 제약을 재시도
+  for (let attempt = 0; attempt < MAX_PENSION_ATTEMPTS; attempt++) {
+    const digits = randomDigits(rng)
+    if (!passesCommonPensionRules(digits)) continue
+    if (violatesTailConstraints(digits, options.avoidLastDigits, options.avoidLastTwo)) continue
+    if (violatesPositionOverlap(digits, options.previousNumbers)) continue
+    return toPensionRecommendationSet(config, digits, ruleWeight)
+  }
+
+  // 5단계(최종): 끝자리만 미사용 숫자로 강제한 무제약 랜덤 폴백
   const availableLastDigits = Array.from({ length: 10 }, (_, digit) => digit)
     .filter((digit) => !options.avoidLastDigits?.has(digit))
   const fallbackDigits = randomDigits(rng)
@@ -322,9 +514,11 @@ export function buildPensionRecommendation(
 export function buildPensionRecommendations(historyNumbers: string[] = [], rng: Rng = Math.random) {
   const ruleWeights = buildPensionRuleWeights(historyNumbers)
   const configById = new Map(PENSION_SET_CONFIGS.map((config) => [config.id, config]))
+  const patternModel = buildPensionPatternModel(historyNumbers)
 
   const avoidLastDigits = new Set<number>()
   const avoidLastTwo = new Set<string>()
+  const previousNumbers: string[] = []
 
   // 진단에 표시되는 우선순위(동점 시 한글 라벨 순 포함)와 동일한 순서로 생성 → 첫 세트가 대표 추천
   return ruleWeights
@@ -333,12 +527,15 @@ export function buildPensionRecommendations(historyNumbers: string[] = [], rng: 
       if (!config) return null
       const set = buildPensionRecommendation(config, historyNumbers, entry.weight, {
         rng,
+        patternModel,
         avoidLastDigits,
         avoidLastTwo,
+        previousNumbers,
       })
       const digits = set.number.split('')
       avoidLastDigits.add(Number(digits[5]))
       avoidLastTwo.add(`${digits[4]}${digits[5]}`)
+      previousNumbers.push(set.number)
       return set
     })
     .filter((set): set is PensionRecommendationSet => set !== null)

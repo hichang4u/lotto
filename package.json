@@ -16,7 +16,10 @@
     "deploy:frontend": "npm run deploy --workspace=frontend",
     "deploy": "npm run deploy:backend && npm run deploy:frontend",
     "typecheck": "tsc --noEmit --project frontend/tsconfig.json && tsc --noEmit --project backend/tsconfig.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:algorithm:build": "tsc --project backend/tsconfig.test.json",
+    "test:algorithm:run": "node --test backend/test/lotto-algorithm.test.js backend/test/pension-algorithm.test.js",
+    "test:algorithm": "npm run test:algorithm:build && npm run test:algorithm:run"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -44,3 +44,6 @@ Thumbs.db
 
 # Local MCP config
 .mcp.json
+
+# Test build output
+backend/test-build/
